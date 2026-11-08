@@ -7,6 +7,7 @@ Pass --previous-binary to use an already verified local release instead.
 """
 import argparse
 import hashlib
+import http.client
 import io
 import json
 import os
@@ -59,13 +60,13 @@ def fetch_release_file(base, name, timeout):
         try:
             with urllib.request.urlopen(f'{base}/{name}', timeout=timeout) as response:
                 return response.read()
-        except (urllib.error.URLError, TimeoutError) as error:
+        except (OSError, http.client.HTTPException) as error:
             last = error
             if isinstance(error, urllib.error.HTTPError) and error.code < 500:
                 raise
         try:
             return _api_asset(name, timeout)
-        except (urllib.error.URLError, TimeoutError, StopIteration) as error:
+        except (OSError, http.client.HTTPException, StopIteration) as error:
             last = error
         time.sleep(10 * (attempt + 1))
     raise AssertionError(f'could not download {name}: {last}')
