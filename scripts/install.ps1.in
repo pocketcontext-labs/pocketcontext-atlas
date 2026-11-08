@@ -53,11 +53,11 @@
         try {
             # Compare as a set: Sort-Object orders names case-insensitively.
             $names = @($zip.Entries | ForEach-Object { $_.FullName })
-            if ($names.Count -ne 2 -or -not ($names -ccontains 'pocketcontext.exe') -or -not ($names -ccontains 'THIRD_PARTY_NOTICES.txt')) { throw 'pocketcontext: unexpected release archive layout' }
+            if ($names.Count -ne 2 -or -not ($names -ccontains 'pocketcontext-atlas.exe') -or -not ($names -ccontains 'THIRD_PARTY_NOTICES.txt')) { throw 'pocketcontext: unexpected release archive layout' }
             New-Item -ItemType Directory -Force -Path $dir | Out-Null
             $stage = Join-Path $dir ('.pocketcontext-' + [Guid]::NewGuid() + '.exe')
             # Extract only the executable into our own file name.
-            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($zip.GetEntry('pocketcontext.exe'), $stage)
+            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($zip.GetEntry('pocketcontext-atlas.exe'), $stage)
         } finally { $zip.Dispose() }
         if ((Get-Item $stage).Length -eq 0) { throw 'pocketcontext: archive executable is empty' }
         Unblock-File -Path $stage
