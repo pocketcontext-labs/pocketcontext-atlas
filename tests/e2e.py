@@ -330,10 +330,10 @@ def earlier_release_scenario(binary, root):
         db.commit()
     before = hashlib.sha256(earlier.db.read_bytes()).hexdigest()
     refused = earlier.run('init', '--port', str(earlier.port), '--password-stdin', stdin=PASSWORD + '\n', expect=1)
-    check('earlier PocketContext release' in refused.stderr and 'does not open databases from earlier releases' in refused.stderr,
+    check('earlier PocketContext Atlas release' in refused.stderr and 'does not open databases from earlier releases' in refused.stderr,
           f'init refuses a database from an earlier release with a clear message: {refused.stderr.strip()}')
     again = earlier.run('ensure-running', expect=1)
-    check('earlier PocketContext release' in again.stderr, 'starting the server refuses it too')
+    check('earlier PocketContext Atlas release' in again.stderr, 'starting the server refuses it too')
     check(not earlier.json('status')['running'], 'no server runs for a refused database')
     check(hashlib.sha256(earlier.db.read_bytes()).hexdigest() == before, 'the refused database file is unchanged')
     leftovers = sorted(p.name for p in earlier.project.iterdir() if p.name.startswith('pocketcontext.db') and p.name != 'pocketcontext.db')
@@ -428,7 +428,7 @@ def scenario(pc):
     text = usage.stdout + usage.stderr
     check('pocketcontext' in text and RETIRED not in text.lower(), 'help names pocketcontext and not the retired product')
     batch_help = pc.run('batch', '--help').stdout
-    check(batch_help.startswith('usage: pocketcontext batch') and '"method"' in batch_help and '"url"' in batch_help
+    check(batch_help.startswith('usage: pocketcontext-atlas batch') and '"method"' in batch_help and '"url"' in batch_help
           and '"body"' in batch_help, 'batch --help documents the request shape')
     check(pc.run('help', 'lint').stdout == pc.run('lint', '-h').stdout and 'unlinked-mention' in pc.run('help', 'lint').stdout,
           'help COMMAND and COMMAND -h print the same help')
@@ -516,7 +516,7 @@ def scenario(pc):
     status, _ = pc.http('GET', '/')
     check(status == 200, 'the reader is served')
     status, body = pc.http('GET', '/api/bundle/instance')
-    check(status == 200 and json.loads(body).get('app') == 'pocketcontext', 'the instance endpoint reports app pocketcontext')
+    check(status == 200 and json.loads(body).get('app') == 'pocketcontext-atlas', 'the instance endpoint reports app pocketcontext-atlas')
     cache = user_cache(pc.home) / 'pocketcontext'
     working = [p for p in cache.iterdir() if p.is_dir() and p.name != 'app' and not p.name.startswith('remote-')] if cache.is_dir() else []
     check(len(working) == 1 and any(working[0].iterdir()), f'the working copy lives in the per-machine pocketcontext cache: {working}')
@@ -577,15 +577,15 @@ def scenario(pc):
     text = (skills / 'SKILL.md').read_text(encoding='utf-8')
     check(str(pc.binary) in text and str(pc.db) in text and '{{' not in text, 'the skill names the absolute binary and database')
     check(installed["binary"] == str(pc.binary), 'skill install reports the binary')
-    check((skills / '.pocketcontext').is_file(), 'the skill directory carries the .pocketcontext marker')
+    check((skills / '.pocketcontext-atlas').is_file(), 'the skill directory carries the .pocketcontext-atlas marker')
     check('name: pocketcontext' in text, 'the skill is named pocketcontext')
     mentions = [str(p) for p in skills.rglob('*') if p.is_file() and RETIRED in p.read_bytes().decode('utf-8', 'replace').lower()]
     check(not mentions, f'no installed skill file mentions the retired product: {mentions}')
     (pc.home / '.claude').mkdir()
     agent = pc.json('skill', '--agent', 'claude-code')
-    target = pc.home / '.claude' / 'skills' / 'pocketcontext'
+    target = pc.home / '.claude' / 'skills' / 'pocketcontext-atlas'
     check(agent['installed'].get('claude-code') == str(target) and (target / 'SKILL.md').is_file()
-          and (target / '.pocketcontext-router').is_file(), 'the Claude Code router is installed as pocketcontext')
+          and (target / '.pocketcontext-atlas-router').is_file(), 'the Claude Code router is installed as pocketcontext-atlas')
 
 
 def structured_ingest(pc, notes):
@@ -698,8 +698,8 @@ def binary_scenario(pc):
     stored = pc.json('ingest', str(original), '--title', 'Quarterly scan')
     source = stored['source']
     check(stored['status'] == 'stored' and stored['media_type'] == 'application/pdf' and stored['sha256'] == digest
-          and stored['title'] == 'Quarterly scan' and 'rendition' not in stored and f'pocketcontext original {source}' in stored['next']
-          and f'pocketcontext extract {source}' in stored['next'], f'ingest stores a binary without a rendition: {stored}')
+          and stored['title'] == 'Quarterly scan' and 'rendition' not in stored and f'pocketcontext-atlas original {source}' in stored['next']
+          and f'pocketcontext-atlas extract {source}' in stored['next'], f'ingest stores a binary without a rendition: {stored}')
     check(pc.json('ingest', str(original))['source'] == source, 'repeated binary ingest deduplicates')
     check(pc.json('sql', f"SELECT count(*) FROM renditions WHERE source = '{source}'")['rows'][0][0] == 0, 'a binary source has no rendition')
     odd = notes / 'blob'
@@ -1007,7 +1007,7 @@ def remote_scenario(pc, r):
     instance = json.loads((pc.project / 'pocketcontext.json').read_text(encoding='utf-8'))['instance']
     local = pc.json('whoami')
     missing = r.run('whoami', expect=2)
-    check('pocketcontext login' in missing.stderr, 'remote data commands require login')
+    check('pocketcontext-atlas login' in missing.stderr, 'remote data commands require login')
     status = r.json('status')
     check(status['url'] == pc.url and status['reachable'] and not status['loggedIn'], 'remote status reports reachable and logged out')
     r.run('login', '--password-stdin', stdin='wrong password\n', expect=1)

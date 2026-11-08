@@ -21,7 +21,7 @@ SPEC.loader.exec_module(m)
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--binary", type=Path, default=ROOT / "bin/pocketcontext")
+    parser.add_argument("--binary", type=Path, default=ROOT / "bin/pocketcontext-atlas")
     args = parser.parse_args()
     binary = args.binary.resolve()
     with tempfile.TemporaryDirectory(prefix="obsidian-import-") as temporary:

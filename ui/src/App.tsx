@@ -123,7 +123,7 @@ function historySpace(space: string) {
 function message(error: unknown) {
   return error instanceof Error
     ? error.message
-    : "Unable to load PocketContext. Please try again.";
+    : "Unable to load PocketContext Atlas. Please try again.";
 }
 export default function App() {
   const [emailLink, setEmailLink] = useState(readEmailLoginLink);
@@ -1519,7 +1519,7 @@ function Reader() {
                   <span className="empty-icon">▤</span>
                   <h1>
                     {busy
-                      ? "Opening PocketContext…"
+                      ? "Opening PocketContext Atlas…"
                       : view.slug
                         ? "Page unavailable"
                         : "A home for your knowledge"}

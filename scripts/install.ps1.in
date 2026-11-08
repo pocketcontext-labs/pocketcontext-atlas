@@ -1,5 +1,5 @@
-# Installs a fixed PocketContext release on Windows.
-# Usage: irm https://github.com/pocketcontext-labs/pocketcontext/releases/download/v@VERSION@/install.ps1 | iex
+# Installs a fixed PocketContext Atlas release on Windows.
+# Usage: irm https://github.com/pocketcontext-labs/pocketcontext-atlas/releases/download/v@VERSION@/install.ps1 | iex
 # Target folder (required): $env:POCKETCONTEXT_INSTALL_DIR, the project folder beside
 # pocketcontext.db, for example inside OneDrive, iCloud Drive, Dropbox or Google Drive.
 & {
@@ -15,23 +15,27 @@
     $dir = $env:POCKETCONTEXT_INSTALL_DIR
     if (-not $dir) { throw 'pocketcontext: set $env:POCKETCONTEXT_INSTALL_DIR to the installation directory (the project folder)' }
     if (-not [System.IO.Path]::IsPathRooted($dir)) { throw 'pocketcontext: the installation directory must be an absolute path' }
-    $destination = Join-Path $dir 'pocketcontext.exe'
+    $destination = Join-Path $dir 'pocketcontext-atlas.exe'
+    $earlier = Join-Path $dir 'pocketcontext.exe'
     $replacing = $false
     function Assert-PocketContextDestination {
         $item = Get-Item -LiteralPath $destination -Force -ErrorAction SilentlyContinue
-        if ($item) {
-            if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'pocketcontext: destination must be a regular file or absent' }
+        $earlierItem = Get-Item -LiteralPath $earlier -Force -ErrorAction SilentlyContinue
+        if ($item -or $earlierItem) {
+            $target = if ($item) { $item } else { $earlierItem }
+            if ($target.PSIsContainer -or ($target.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'pocketcontext: destination must be a regular file or absent' }
             if (-not $env:POCKETCONTEXT_REPLACE_VERSION) { throw 'pocketcontext: executable already exists; stop its servers and tunnels, back up the complete projects and matching binary, then set POCKETCONTEXT_REPLACE_VERSION to its inspected --version (or choose a new directory)' }
-            $observed = & $destination --version
-            if ($LASTEXITCODE -ne 0 -or (($observed -join "`n") -notmatch '^pocketcontext ([^\s]+)(?:\s|$)') -or $Matches[1] -cne $env:POCKETCONTEXT_REPLACE_VERSION) { throw 'pocketcontext: existing executable version differs from POCKETCONTEXT_REPLACE_VERSION; nothing replaced' }
+            $observed = & $target.FullName --version
+            if ($LASTEXITCODE -ne 0 -or (($observed -join "`n") -notmatch '^pocketcontext(?:-atlas)? ([^\s]+)(?:\s|$)') -or $Matches[1] -cne $env:POCKETCONTEXT_REPLACE_VERSION) { throw 'pocketcontext: existing executable version differs from POCKETCONTEXT_REPLACE_VERSION; nothing replaced' }
             return $true
         }
+        if (Test-Path -LiteralPath (Join-Path $dir 'pocketcontext.db')) { throw 'pocketcontext: existing database without a PocketContext executable; run the release that created it or choose a new directory' }
         if ($env:POCKETCONTEXT_REPLACE_VERSION) { throw 'pocketcontext: replacement requested but no executable exists in this directory' }
         return $false
     }
     $replacing = Assert-PocketContextDestination
-    $archive = "pocketcontext_${version}_windows_amd64.zip"
-    $base = "https://github.com/pocketcontext-labs/pocketcontext/releases/download/v$version"
+    $archive = "pocketcontext-atlas_${version}_windows_amd64.zip"
+    $base = "https://github.com/pocketcontext-labs/pocketcontext-atlas/releases/download/v$version"
     $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("pocketcontext-install-" + [Guid]::NewGuid())
     New-Item -ItemType Directory -Path $tmp | Out-Null
     $stage = $null
@@ -59,7 +63,7 @@
         Unblock-File -Path $stage
         $replacing = Assert-PocketContextDestination
         Move-Item -Force -LiteralPath $stage -Destination $destination
-        Write-Output "Installed PocketContext $version at $destination"
+        Write-Output "Installed PocketContext Atlas $version at $destination"
         if ($replacing -or (Test-Path -LiteralPath (Join-Path $dir 'pocketcontext.db'))) {
             Write-Output 'Next: verify --version, restart the existing project, refresh its skill/profile and check it; do not initialize it again.'
         } else {

@@ -2,7 +2,7 @@
 """Rehearse coexistence, upgrade and full-backup rollback with synthetic projects.
 
 Runs on Linux, macOS and Windows using only the standard library. By default it
-fetches the pinned 0.15.0 executable and verifies the release archive checksum.
+fetches the pinned 0.24.0 executable and verifies the release archive checksum.
 Pass --previous-binary to use an already verified local release instead.
 """
 import argparse
@@ -17,12 +17,58 @@ import subprocess
 import tarfile
 import tempfile
 import time
+import urllib.error
 import urllib.request
 import zipfile
 
 from e2e import isolated_env, free_port, PASSWORD
 
-PREVIOUS = '0.15.0'
+PREVIOUS = '0.24.0'
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+def _api_asset(name, timeout):
+    """Fetch through the REST API; the token never follows the storage redirect."""
+    headers = {'Accept': 'application/vnd.github+json', 'User-Agent': 'atlas-upgrade-test'}
+    if os.environ.get('GITHUB_TOKEN'):
+        headers['Authorization'] = 'Bearer ' + os.environ['GITHUB_TOKEN']
+    repository = f'https://api.github.com/repos/pocketcontext-labs/pocketcontext/releases/tags/v{PREVIOUS}'
+    with urllib.request.urlopen(urllib.request.Request(repository, headers=headers), timeout=timeout) as response:
+        asset = next(a for a in json.load(response)['assets'] if a['name'] == name)
+    opener = urllib.request.build_opener(_NoRedirect)
+    try:
+        with opener.open(urllib.request.Request(asset['url'], headers={**headers, 'Accept': 'application/octet-stream'}), timeout=timeout) as response:
+            return response.read()
+    except urllib.error.HTTPError as redirect:
+        if redirect.code not in (301, 302, 307) or not redirect.headers.get('Location'):
+            raise
+        location = redirect.headers['Location']
+    with urllib.request.urlopen(location, timeout=timeout) as response:
+        return response.read()
+
+
+def fetch_release_file(base, name, timeout):
+    """Download a release file, surviving download-endpoint outages. The caller
+    still verifies the archive against the release checksum."""
+    last = None
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(f'{base}/{name}', timeout=timeout) as response:
+                return response.read()
+        except (urllib.error.URLError, TimeoutError) as error:
+            last = error
+            if isinstance(error, urllib.error.HTTPError) and error.code < 500:
+                raise
+        try:
+            return _api_asset(name, timeout)
+        except (urllib.error.URLError, TimeoutError, StopIteration) as error:
+            last = error
+        time.sleep(10 * (attempt + 1))
+    raise AssertionError(f'could not download {name}: {last}')
 
 
 def download_previous(destination):
@@ -33,13 +79,11 @@ def download_previous(destination):
     extension = 'zip' if system == 'windows' else 'tar.gz'
     archive = f'pocketcontext_{PREVIOUS}_{system}_{arch}.{extension}'
     base = f'https://github.com/pocketcontext-labs/pocketcontext/releases/download/v{PREVIOUS}'
-    with urllib.request.urlopen(f'{base}/checksums.txt', timeout=120) as response:
-        checksums = response.read().decode('utf-8')
+    checksums = fetch_release_file(base, 'checksums.txt', 120).decode('utf-8')
     expected = [line.split()[0] for line in checksums.splitlines() if len(line.split()) == 2 and line.split()[1] == archive]
     if len(expected) != 1:
         raise AssertionError('previous archive must have exactly one release checksum')
-    with urllib.request.urlopen(f'{base}/{archive}', timeout=180) as response:
-        data = response.read()
+    data = fetch_release_file(base, archive, 180)
     if hashlib.sha256(data).hexdigest() != expected[0]:
         raise AssertionError('previous release archive checksum mismatch')
     name = 'pocketcontext.exe' if system == 'windows' else 'pocketcontext'
@@ -73,19 +117,32 @@ def replace_binary(source, destination):
             time.sleep(0.1)
 
 
+def settled(operation, *args):
+    """Windows keeps files locked briefly after a stopped server exits."""
+    for attempt in range(60):
+        try:
+            return operation(*args)
+        except PermissionError:
+            if attempt == 59:
+                raise
+            time.sleep(1)
+
+
 def rehearse(target, previous, root):
     home = root / 'home'
     (home / '.codex').mkdir(parents=True)
     env = isolated_env(home)
-    executable = 'pocketcontext.exe' if os.name == 'nt' else 'pocketcontext'
+    earlier = 'pocketcontext.exe' if os.name == 'nt' else 'pocketcontext'
+    current = 'pocketcontext-atlas.exe' if os.name == 'nt' else 'pocketcontext-atlas'
     alpha = root / 'Old project'
     beta = root / 'New project'
+    executables = {alpha: earlier, beta: current}
     for folder, source in ((alpha, previous), (beta, target)):
         folder.mkdir()
-        shutil.copy2(source, folder / executable)
+        shutil.copy2(source, folder / executables[folder])
 
     def run(folder, *args, binary=None, stdin=None, expect=0):
-        command = [str(binary or folder / executable), '--db', str(folder / 'pocketcontext.db'), *args]
+        command = [str(binary or folder / executables[folder]), '--db', str(folder / 'pocketcontext.db'), *args]
         result = subprocess.run(command, input=stdin, capture_output=True, text=True, encoding='utf-8', env=env, timeout=120)
         if result.returncode != expect:
             raise AssertionError(f'{args}: exit {result.returncode}, expected {expect}\n{result.stdout}\n{result.stderr}')
@@ -115,7 +172,7 @@ def rehearse(target, previous, root):
         assert data(alpha, 'status')['version'] == old_version
         assert data(beta, 'status')['version'] == new_version
         refused = run(alpha, 'ensure-running', binary=target, expect=1)
-        assert 'version' in refused.stderr and old_version in refused.stderr, refused.stderr
+        assert 'earlier' in refused.stderr and old_version in refused.stderr, refused.stderr
         mismatch = data(alpha, 'status', binary=target)
         assert mismatch['version'] == new_version and mismatch['serverVersion'] == old_version
         assert mismatch['compatible'] is False
@@ -127,7 +184,10 @@ def rehearse(target, previous, root):
         shutil.copytree(alpha, backup)
         before_hash = hashlib.sha256((alpha / 'pocketcontext.db').read_bytes()).hexdigest()
         identity = json.loads((alpha / 'pocketcontext.json').read_text())['instance']
-        replace_binary(target, alpha / executable)
+        # The new executable goes beside the old name; the old one moves to the backup.
+        replace_binary(target, alpha / current)
+        settled(os.remove, alpha / earlier)
+        executables[alpha] = current
         assert hashlib.sha256((alpha / 'pocketcontext.db').read_bytes()).hexdigest() == before_hash
         stopped.discard(alpha)
         run(alpha, 'ensure-running')
@@ -142,22 +202,23 @@ def rehearse(target, previous, root):
         stopped.add(alpha)
         # Roll back all project data together with its matching binary, at the
         # same path; machine-local profiles and skills are recreated explicitly.
-        shutil.rmtree(alpha)
+        settled(shutil.rmtree, alpha)
         shutil.copytree(backup, alpha)
         assert hashlib.sha256((alpha / 'pocketcontext.db').read_bytes()).hexdigest() == before_hash
-        assert release(alpha / executable) == old_version
+        assert release(alpha / earlier) == old_version
+        executables[alpha] = earlier
         stopped.discard(alpha)
         run(alpha, 'ensure-running')
         data(alpha, 'skill', '--agent', 'codex')
         assert data(alpha, 'status')['version'] == old_version
         assert data(alpha, 'sql', "SELECT title FROM sources WHERE id = '" + source + "'")['rows'] == [['Upgrade evidence']]
-        data(beta, 'profile', 'check', 'Older')
+        data(alpha, 'profile', 'check', 'Older')
         assert data(beta, 'status')['version'] == new_version
         print(f'PASS: {old_version} and {new_version} coexist; mismatch refused; clean upgrade and complete-backup rollback preserve evidence and identity')
     finally:
         for folder in (alpha, beta):
             if folder not in stopped:
-                result = subprocess.run([str(folder / executable), '--db', str(folder / 'pocketcontext.db'), 'stop'], env=env, capture_output=True, timeout=60)
+                result = subprocess.run([str(folder / executables[folder]), '--db', str(folder / 'pocketcontext.db'), 'stop'], env=env, capture_output=True, timeout=60)
                 if result.returncode:
                     raise AssertionError(f'could not stop synthetic project {folder.name}: {result.stderr.decode(errors="replace")}')
 

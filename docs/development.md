@@ -52,8 +52,8 @@ project. The following path is deliberately inside Git-ignored `.private/`:
 mkdir -p .private/dev/project
 chmod 700 .private .private/dev .private/dev/project
 DEV_DB="$PWD/.private/dev/project/pocketcontext.db"
-bin/pocketcontext init --db "$DEV_DB" --name "PocketContext Development" --port 18096
-bin/pocketcontext stop --db "$DEV_DB"
+bin/pocketcontext-atlas init --db "$DEV_DB" --name "PocketContext Development" --port 18096
+bin/pocketcontext-atlas stop --db "$DEV_DB"
 pc-dev --db "$DEV_DB"
 ```
 
@@ -76,7 +76,7 @@ loopback UI upstream. Open **http://127.0.0.1:18096**, not port 5173, and sign i
 For a fresh sign-in link, run this in another terminal with access to the project:
 
 ```sh
-bin/pocketcontext open --db "$PWD/.private/dev/project/pocketcontext.db" --no-browser
+bin/pocketcontext-atlas open --db "$PWD/.private/dev/project/pocketcontext.db" --no-browser
 ```
 
 A link expires after two minutes. On a remote host, the host's loopback URL is
@@ -134,7 +134,7 @@ pnpm --dir ui build
 After launcher changes, run `node --test tests/dev_launcher.test.mjs`. For real
 browser checks, install the pinned browser once with
 `pnpm --dir ui exec playwright install chromium`, then run
-`node tests/ui_dev_browser.mjs --binary bin/pocketcontext` and the reader/browser
+`node tests/ui_dev_browser.mjs --binary bin/pocketcontext-atlas` and the reader/browser
 checks in the README. Native browser system dependencies are separate from the
 Nix toolchain; the scripts also accept an explicitly supplied browser executable.
 

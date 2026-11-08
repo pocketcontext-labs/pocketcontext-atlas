@@ -18,8 +18,9 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/pocketcontext-labs/pocketcontext/internal/bundle"
-	"github.com/pocketcontext-labs/pocketcontext/internal/mcpobserve"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/buildinfo"
+	"github.com/pocketcontext-labs/pocketcontext-core/appserver"
+	"github.com/pocketcontext-labs/pocketcontext-core/mcpobserve"
 )
 
 const (
@@ -41,7 +42,7 @@ type mcpCaller struct {
 }
 
 func newMCPHandler(api http.Handler) http.Handler {
-	server := mcp.NewServer(&mcp.Implementation{Name: "PocketContext", Version: bundle.Version}, &mcp.ServerOptions{
+	server := mcp.NewServer(&mcp.Implementation{Name: "PocketContext", Version: buildinfo.Version}, &mcp.ServerOptions{
 		Instructions: mcpInstructions, Capabilities: &mcp.ServerCapabilities{Tools: &mcp.ToolCapabilities{}},
 	})
 	addMCPTools(server, api)
@@ -49,7 +50,7 @@ func newMCPHandler(api http.Handler) http.Handler {
 		Stateless: true, JSONResponse: true, MaxRequestBodyBytes: mcpInputLimit, PropagateRequestCancellation: true,
 	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := bundle.MCPAuthToken(r.Context())
+		token := appserver.MCPAuthToken(r.Context())
 		if token == "" {
 			http.Error(w, "MCP authorization required", http.StatusUnauthorized)
 			return
@@ -393,7 +394,7 @@ func addMCPTools(s *mcp.Server, api http.Handler) {
 		if err != nil {
 			return nil, err
 		}
-		return map[string]any{"signed_in": true, "url": c.Base, "space": id, "version": bundle.Version}, nil
+		return map[string]any{"signed_in": true, "url": c.Base, "space": id, "version": buildinfo.Version}, nil
 	})
 	addMCPTool(s, api, "schema", "Read the live allowlisted SQL schema and query limits.", true, func(c *Client, a mcpSpace) (any, error) { return c.Must("GET", "/api/context/schema", nil) })
 	addMCPTool(s, api, "query", "Run bounded read-only SQL over knowledge, history and audit records. SQL can span spaces: explicitly filter space when intended. Credentials and internal tables are inaccessible.", true, func(c *Client, a mcpQuery) (any, error) {

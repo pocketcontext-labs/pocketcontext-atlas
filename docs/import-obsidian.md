@@ -45,7 +45,7 @@ binary's authenticated CLI; it never opens the database or storage directory.
 python3 scripts/import_obsidian.py /absolute/path/to/vault \
   --collection example \
   --apply \
-  --binary /absolute/path/to/pocketcontext/bin/pocketcontext \
+  --binary /absolute/path/to/pocketcontext/bin/pocketcontext-atlas \
   --db /absolute/path/to/dev/pocketcontext.db \
   --state /absolute/path/to/work/import-state.json \
   --report /absolute/path/to/work/import-report.json
@@ -120,7 +120,7 @@ not completed evidence extraction or claim verification.
 
 ```sh
 python3 tests/obsidian_import_test.py
-python3 tests/obsidian_import_e2e.py --binary bin/pocketcontext
+python3 tests/obsidian_import_e2e.py --binary bin/pocketcontext-atlas
 ```
 
 Both checks use synthetic data. The first covers link resolution, code

@@ -10,7 +10,7 @@ concurrency:
   group: hosted-image-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 env:
-  IMAGE: ghcr.io/pocketcontext-labs/pocketcontext
+  IMAGE: ghcr.io/pocketcontext-labs/pocketcontext-atlas
 jobs:
   tests:
     uses: ./.github/workflows/test.yml

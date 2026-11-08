@@ -175,7 +175,7 @@ def main():
             for filename, content in originals:
                 script = "import base64,pathlib;pathlib.Path(" + repr("/tmp/" + filename) + ").write_bytes(base64.b64decode(" + repr(base64.b64encode(content).decode()) + "))"
                 docker("exec", "-i", source_name, "python3", "-", input=script)
-                result = json.loads(docker("exec", source_name, "pocketcontext", "ingest", "/tmp/" + filename, "--title", filename).stdout)
+                result = json.loads(docker("exec", source_name, "pocketcontext-atlas", "ingest", "/tmp/" + filename, "--title", filename).stdout)
                 sources.append((result["source"], content))
             old_reader = local_token(source_name)
             assert request(source_port, "/api/context/schema", token=old_reader)[0] == 200
@@ -212,11 +212,11 @@ def main():
             _, new_mcp = mcp_grant(restored_port, fresh)
             assert new_mcp["access_token"] != old_mcp["access_token"], "restored instance supports a fresh MCP connection"
             for source, original in sources:
-                result = json.loads(docker("exec", restored_name, "pocketcontext", "original", source, "--out", "/tmp/" + source).stdout)
+                result = json.loads(docker("exec", restored_name, "pocketcontext-atlas", "original", source, "--out", "/tmp/" + source).stdout)
                 assert result["sha256"] == hashlib.sha256(original).hexdigest()
                 recovered = docker("exec", restored_name, "python3", "-c", "import hashlib,pathlib;print(hashlib.sha256(pathlib.Path('/tmp/" + source + "').read_bytes()).hexdigest())").stdout.strip()
                 assert recovered == hashlib.sha256(original).hexdigest()
-            assert "preserve every original" in docker("exec", restored_name, "pocketcontext", "sql", "SELECT body FROM passages ORDER BY ordinal").stdout
+            assert "preserve every original" in docker("exec", restored_name, "pocketcontext-atlas", "sql", "SELECT body FROM passages ORDER BY ordinal").stdout
             docker("stop", "--time", "100", restored_name)
             assert docker("inspect", "--format", "{{.State.ExitCode}}", restored_name).stdout.strip() == "0"
             print("Actual-image populated HTTPS S3 backup, remote hashes, pre-upgrade checkpoint, empty-volume restore, original hashes and credential invalidation passed.")

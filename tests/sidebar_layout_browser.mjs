@@ -18,7 +18,7 @@ function option(name, fallback) {
   assert(process.argv[index + 1], `${name} requires a value`);
   return process.argv[index + 1];
 }
-const binary = path.resolve(option('--binary', path.join(root, 'bin/pocketcontext')));
+const binary = path.resolve(option('--binary', path.join(root, 'bin/pocketcontext-atlas')));
 const { chromium } = createRequire(path.join(root, 'ui/package.json'))('playwright');
 const temporary = await mkdtemp(path.join(os.tmpdir(), 'pocketcontext-sidebar-layout-test-'));
 const screenshotOption = option('--screenshots');

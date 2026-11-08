@@ -1,7 +1,7 @@
 package client
 
 // Usage is the help text.
-const Usage = `pocketcontext — local knowledge base in one binary
+const Usage = `pocketcontext-atlas — local knowledge base in one binary
 
 The project is the database file (default: pocketcontext.db beside this binary, or
 --db PATH, or POCKETCONTEXT_DB), the storage/ folder and pocketcontext.json beside
@@ -45,6 +45,8 @@ Setup and server:
   profile add|update|list|remove|default|check|repair [NAME]
                        manage private registrations; never delete project data
   manual --out NEW_DIR  export the embedded user manual offline
+  upgrade-check --db DB [--from VERSION] [--inventory]
+                       local, read-only upgrade diagnostic; starts nothing
 
 Spaces (partitions of the knowledge; there is no delete):
   whoami                             show the selected space and sign-in
@@ -136,10 +138,10 @@ Remote client (the server runs on another computer, reached through
                        install the agent skill for the remote server
   Knowledge commands work with --url. URL must be http://127.0.0.1:PORT or
   http://localhost:PORT. Remote mode never creates a database or starts a
-  server; serve, start, ensure-running, stop, flush, recover, init, password
-  and login-code are not available with --url.
+  server; serve, start, ensure-running, stop, flush, recover, init, password,
+  upgrade-check and login-code are not available with --url.
 
-Run ` + "`pocketcontext help COMMAND`" + ` or ` + "`pocketcontext COMMAND --help`" + ` for usage, details and an example.
+Run ` + "`pocketcontext-atlas help COMMAND`" + ` or ` + "`pocketcontext-atlas COMMAND --help`" + ` for usage, details and an example.
 Options for every command: --db PATH or --url URL, --space SPACE (ID or unique
 name; also POCKETCONTEXT_SPACE), --pretty.
 --url and --db exclude each other; --db overrides POCKETCONTEXT_URL.

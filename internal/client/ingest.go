@@ -721,7 +721,7 @@ const (
 // converts it and records the text with `extract`.
 func (c *Client) ingestBinary(abs, suffix string, content []byte, o IngestOptions) (map[string]any, error) {
 	if o.VersionSet {
-		return nil, fail(2, "--version applies to text sources; convert the file and run `pocketcontext extract`")
+		return nil, fail(2, "--version applies to text sources; convert the file and run `pocketcontext-atlas extract`")
 	}
 	if len(content) > maxBinarySource {
 		return nil, fail(2, binaryTooLarge)
@@ -742,7 +742,7 @@ func (c *Client) ingestBinary(abs, suffix string, content []byte, o IngestOption
 		return nil, err
 	}
 	if len(labels) == 0 {
-		result["status"], result["next"] = "stored", fmt.Sprintf("Read the original (pocketcontext original %s --out FILE), convert it to UTF-8 text or Markdown, then run pocketcontext extract %s --text FILE --tool TOOL", result["source"], result["source"])
+		result["status"], result["next"] = "stored", fmt.Sprintf("Read the original (pocketcontext-atlas original %s --out FILE), convert it to UTF-8 text or Markdown, then run pocketcontext-atlas extract %s --text FILE --tool TOOL", result["source"], result["source"])
 		return result, nil
 	}
 	versions := make([]string, len(labels))

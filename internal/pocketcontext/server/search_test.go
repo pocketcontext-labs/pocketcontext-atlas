@@ -12,7 +12,7 @@ import (
 	"ganigeorgiev.com/pocketbase/dbx"
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tests"
-	"github.com/pocketcontext-labs/pocketcontext/internal/pocketcontext/searchread"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/pocketcontext/searchread"
 )
 
 func searchFixture(t *testing.T) (*tests.TestApp, Config, string, string) {

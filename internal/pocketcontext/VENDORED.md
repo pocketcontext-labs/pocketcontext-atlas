@@ -1,5 +1,8 @@
 # Vendored PocketContext server
 
+The `database`, `sqliteuri` and maintenance packages moved to `pocketcontext-core` (see its
+`VENDORED.md`). This repository keeps `server` (SQL/search), `sqlread`, `searchread` and `tracing`.
+
 Copied from github.com/pocketcontext/pocketcontext at commit
 20843b7c888daaba55f0646dd77455b7b309d4cc, under its MIT license (LICENSE).
 Import paths were rewritten to this module. PocketBase was later upgraded from

@@ -96,7 +96,7 @@ Example desired configuration (replace placeholders; values reference private
 once:
   applications:
     - host: knowledge.example.com
-      image: ghcr.io/pocketcontext-labs/pocketcontext@sha256:REPLACE_WITH_VERIFIED_DIGEST
+      image: ghcr.io/pocketcontext-labs/pocketcontext-atlas@sha256:REPLACE_WITH_VERIFIED_DIGEST
       health-path: /up
       deploy-strategy: stop-first
       deploy-stop-timeout: 300
@@ -136,8 +136,8 @@ separate domains, volumes, owner bindings and backup buckets. Add these fields t
 each enrolled application's existing configuration:
 
 ```yaml
-image: ghcr.io/pocketcontext-labs/pocketcontext:latest
-github: pocketcontext-labs/pocketcontext
+image: ghcr.io/pocketcontext-labs/pocketcontext-atlas:latest
+github: pocketcontext-labs/pocketcontext-atlas
 deploy-strategy: stop-first
 deploy-prepare-command: [pocketcontext-container, prepare-upgrade]
 deploy-prepare-timeout: 900
@@ -209,6 +209,19 @@ backup before starting, which can exceed ONCE's 120-second budget; preparation i
 therefore recommended. If deployment is postponed, restart the original image to
 resume service; this invalidates its prepared receipt. Never use a newer image to
 open an old volume merely to inspect it.
+
+## Upgrade from the PocketContext 0.24.x image
+
+The image is `ghcr.io/pocketcontext-labs/pocketcontext-atlas`. An existing
+PocketContext 0.24.x instance upgrades **in place on the same volume**: run
+`pocketcontext-container prepare-upgrade` in the old container, stop it with its
+long graceful window, then use `once update HOST --image` with the new digest
+and its existing environment. The new image reads the project and receipt
+written by the old container, keeps `/storage`, `/up` and the backup format and
+needs no restore. ONCE keeps the app name and volume across an image rename, so do
+not `once deploy` on an occupied host. When the image repository changes, update
+the deployment's `image` and `github` together. Restore from backup only if the
+volume did not carry over, which rehearsal did not observe.
 
 ## Disaster restore
 

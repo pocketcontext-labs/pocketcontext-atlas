@@ -15,7 +15,7 @@ export function parseOptions(args) {
     binary: join(
       root,
       "bin",
-      process.platform === "win32" ? "pocketcontext.exe" : "pocketcontext",
+      process.platform === "win32" ? "pocketcontext-atlas.exe" : "pocketcontext-atlas",
     ),
     vitePort: 5173,
   };
@@ -193,7 +193,7 @@ export async function run(args) {
           ),
         );
         return (
-          instance.app === "pocketcontext" &&
+          instance.app === "pocketcontext-atlas" &&
           instance.instance === config.instance &&
           instance.pid === backend.child.pid &&
           instance.uiDev === upstream

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/buildinfo"
 	"io"
 	"net/http"
 	"net/url"
@@ -17,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pocketcontext-labs/pocketcontext/internal/bundle"
+	"github.com/pocketcontext-labs/pocketcontext-core/appserver"
 )
 
 var idPattern = regexp.MustCompile(`^[a-z0-9]{15}$`)
@@ -60,20 +61,20 @@ func newClient(base, space string) (*Client, error) {
 }
 
 // New ensures the server is running and obtains a token for the local account.
-func New(p *bundle.Project, space string) (*Client, error) {
+func New(p *appserver.Project, space string) (*Client, error) {
 	c, err := newClient(p.URL(), space)
 	if err != nil {
 		return nil, err
 	}
 	c.DB = p.DB
-	if err := bundle.EnsureRunning(p, bundle.StartOptions{}); err != nil {
+	if err := appserver.EnsureRunning(p, appserver.StartOptions{}); err != nil {
 		return nil, fail(1, "%v", err)
 	}
-	c.http, err = bundle.LocalHTTPClient(p, 30*time.Second)
+	c.http, err = appserver.LocalHTTPClient(p, 30*time.Second)
 	if err != nil {
 		return nil, fail(1, "%v", err)
 	}
-	key, err := bundle.ReadKey(p)
+	key, err := appserver.ReadKey(p)
 	if err != nil {
 		return nil, fail(1, "%v", err)
 	}
@@ -120,7 +121,7 @@ func (c *Client) send(method, path string, body any, headers map[string]string, 
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
-	req.Header.Set("User-Agent", "PocketContext/"+bundle.Version)
+	req.Header.Set("User-Agent", "PocketContext/"+buildinfo.Version)
 	if c.token != "" {
 		req.Header.Set("Authorization", c.token)
 	}
@@ -302,7 +303,7 @@ func (c *Client) ResolveSpace(ref string) (map[string]any, error) {
 	}
 	switch len(named) {
 	case 0:
-		return nil, fail(2, "no space with ID or name %q; run `pocketcontext spaces`", ref)
+		return nil, fail(2, "no space with ID or name %q; run `pocketcontext-atlas spaces`", ref)
 	case 1:
 		return named[0], nil
 	}

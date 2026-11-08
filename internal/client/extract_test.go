@@ -143,7 +143,7 @@ func TestIngestBinaryRefusals(t *testing.T) {
 	pdf := filepath.Join(dir, "report.pdf")
 	os.WriteFile(pdf, []byte("%PDF-1.7\n\x00\xff"), 0644)
 	c := &Client{Base: "http://127.0.0.1:1"}
-	if _, err := c.Ingest(pdf, IngestOptions{Version: "v3", VersionSet: true}); exitCode(err) != 2 || !strings.Contains(err.Error(), "pocketcontext extract") {
+	if _, err := c.Ingest(pdf, IngestOptions{Version: "v3", VersionSet: true}); exitCode(err) != 2 || !strings.Contains(err.Error(), "pocketcontext-atlas extract") {
 		t.Fatalf("--version with a binary: %v", err)
 	}
 	big := filepath.Join(dir, "big.wav")
@@ -238,7 +238,7 @@ func TestPassagesReadAgentText(t *testing.T) {
 		t.Fatalf("text rendition: %+v %v", s, err)
 	}
 	renditions = nil
-	if _, err = c.SourcePassages("source000000001", "", false); exitCode(err) != 1 || !strings.Contains(err.Error(), "pocketcontext extract") {
+	if _, err = c.SourcePassages("source000000001", "", false); exitCode(err) != 1 || !strings.Contains(err.Error(), "pocketcontext-atlas extract") {
 		t.Fatalf("no rendition: %v", err)
 	}
 }

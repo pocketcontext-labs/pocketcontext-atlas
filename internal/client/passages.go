@@ -33,7 +33,7 @@ type SourcePassages struct {
 // A source without a text rendition reads its newest agent-text rendition.
 func (c *Client) SourcePassages(sourceID, version string, versionSet bool) (*SourcePassages, error) {
 	if !idPattern.MatchString(sourceID) {
-		return nil, fail(2, "source ID must be 15 lowercase letters or digits; list sources with `pocketcontext sql \"SELECT id, title FROM sources ORDER BY created DESC LIMIT 20\"`")
+		return nil, fail(2, "source ID must be 15 lowercase letters or digits; list sources with `pocketcontext-atlas sql \"SELECT id, title FROM sources ORDER BY created DESC LIMIT 20\"`")
 	}
 	if versionSet && (version == "" || len([]rune(version)) > 100) {
 		return nil, fail(2, "rendition version must contain 1–100 characters")
@@ -81,7 +81,7 @@ func (c *Client) SourcePassages(sourceID, version string, versionSet bool) (*Sou
 			labels = append(labels, fmt.Sprint(r["version_label"]))
 		}
 		if len(labels) == 0 {
-			return nil, fail(1, "source %s has no rendition; run `pocketcontext ingest PATH` for a text note, or convert the original and run `pocketcontext extract %s --text FILE --tool TOOL`", sourceID, sourceID)
+			return nil, fail(1, "source %s has no rendition; run `pocketcontext-atlas ingest PATH` for a text note, or convert the original and run `pocketcontext-atlas extract %s --text FILE --tool TOOL`", sourceID, sourceID)
 		}
 		return nil, fail(1, "source %s has no rendition %q (it has %s)", sourceID, version, strings.Join(labels, ", "))
 	}
@@ -149,9 +149,9 @@ func (s *SourcePassages) Count() int { return len(s.passages) }
 // writePassages prints the passages, or writes them to a file and prints a summary.
 func writePassages(s *SourcePassages, out string, pretty bool) error {
 	if s.Expected >= 0 && s.Count() < s.Expected {
-		again := "`pocketcontext ingest PATH`"
+		again := "`pocketcontext-atlas ingest PATH`"
 		if s.Derived {
-			again = "`pocketcontext extract " + s.Source + "` with the same --text, --tool and --version"
+			again = "`pocketcontext-atlas extract " + s.Source + "` with the same --text, --tool and --version"
 		}
 		fmt.Fprintf(os.Stderr, "WARNING: rendition %s holds %d of %d passages; extraction is incomplete, rerun %s for this source\n",
 			s.Rendition, s.Count(), s.Expected, again)

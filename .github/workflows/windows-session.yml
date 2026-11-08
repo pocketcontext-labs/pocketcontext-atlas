@@ -70,11 +70,11 @@ jobs:
       - name: Build the binary onto the desktop
         shell: bash
         run: |
-          CGO_ENABLED=1 go build -trimpath -tags "$(cat build-tags.txt)" -o bin/pocketcontext.exe ./cmd/pocketcontext
+          CGO_ENABLED=1 go build -trimpath -tags "$(cat build-tags.txt)" -o bin/pocketcontext-atlas.exe ./cmd/pocketcontext-atlas
           desktop="$(cygpath "$USERPROFILE")/Desktop/PocketContext"
           mkdir -p "$desktop"
-          cp bin/pocketcontext.exe "$desktop/"
-          "$desktop/pocketcontext.exe" version
+          cp bin/pocketcontext-atlas.exe "$desktop/"
+          "$desktop/pocketcontext-atlas.exe" version
 
       - name: Install tailcat 0.7.0
         env:

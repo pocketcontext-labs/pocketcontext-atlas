@@ -1,5 +1,67 @@
 # Upgrades and multiple releases
 
+## PocketContext 0.24.x to PocketContext Atlas 0.25.0 (agent runbook)
+
+No data migration. The database, `pocketcontext.json`, `storage/`, private cache, tunnel
+address and saved client sessions are unchanged. What changes: the executable name
+(`pocketcontext-atlas`), the release repository (`pocketcontext-labs/pocketcontext-atlas`),
+the skill directory and the profile registry (`<config>/pocketcontext-atlas/`).
+
+Do this on each computer and do not reorder: **stop, confirm flush, back up, upgrade,
+verify.** Never run `init` on an existing project. Never put passwords, tokens or local
+keys in chat; invitations, codes and reader links stay allowed in setup chats but grant
+access. One computer at a time for synced projects. Do not use `--take-over`, `kill`, or
+delete a `.conflict-*`/`.replaced-*` file to make a check pass.
+
+1. **Inventory (read-only).** Record each executable path and `--version` (must be
+   0.24.x), each project's `DB` with `status --db DB` and `profile list`, whether the
+   computer is the server or a paired client (`tunnel status --url URL`), and any service
+   manager owning `serve` or `tunnel serve`.
+2. **Stage and check.** Download the release installer, install beside the project into
+   a private staging directory (`sh install.sh /private/stage`), then run
+   `pocketcontext-atlas upgrade-check --db DB --from 0.24.0 --inventory`. It is local and
+   read-only, reports `ready`, and must show only items this runbook handles.
+3. **Order.** Upgrade the server computer first; on paired clients stop the forward now
+   (`pocketcontext tunnel stop --url URL` with the old binary) and upgrade after the
+   server verifies, so client and server report the same release. Do not start a forward
+   until both are done. For a synced project finish one computer completely and wait for
+   the sync client to be idle; never start a second server until the first has stopped.
+4. **Stop.** Stop any service or terminal owning the server, then `pocketcontext stop --db DB`
+   with the old binary (it can also be stopped by `pocketcontext-atlas stop --db DB`).
+5. **Confirm flush.** Run `upgrade-check --db DB --from 0.24.0` again and require `ready`,
+   `server.stopped`, `workingCopy` and `lease` passing. If it reports a dirty interrupted
+   run, start the old binary once with `ensure-running`, stop it cleanly, and re-check.
+6. **Back up.** Copy the complete stopped project (`pocketcontext.db`, `pocketcontext.json`,
+   `storage/`) and the matching old executable to a separate location outside the synced
+   folder, and record the database checksum. Never copy the private cache, tokens, local
+   keys or profiles into the backup.
+7. **Upgrade.** Install beside the old executable with the version assertion:
+   `POCKETCONTEXT_REPLACE_VERSION=0.24.0 sh install.sh /absolute/project` (PowerShell: set
+   `POCKETCONTEXT_INSTALL_DIR` and `POCKETCONTEXT_REPLACE_VERSION` for the session). Move
+   the old executable out of the project folder into the backup. Then
+   `pocketcontext-atlas ensure-running --db DB`, `pocketcontext-atlas skill --db DB`,
+   `pocketcontext-atlas profile check NAME`. Do not edit the old skill or registry.
+8. **Verify.** `pocketcontext-atlas status --db DB` must show 0.25.0, the unchanged
+   instance and port, no write-back conflict; `whoami`, `check`, `spaces` and a known
+   source read back; counts match the inventory. Have the user confirm the reader;
+   report reader status as pending until confirmed.
+9. **Paired clients**, after the server verifies: install the new release into the client
+   folder, then `pocketcontext-atlas tunnel forward --url URL --background`,
+   `pocketcontext-atlas skill --url URL` and `pocketcontext-atlas whoami --url URL`.
+   Saved addresses and sign-ins survive; do not re-pair and do not rotate the tunnel
+   address. A forward from 0.24.x must be restarted with the new binary.
+10. **Clean-up**, after every project on the computer is verified: remove the old skill
+    directory only if every project it listed has a new registration and Crew is not
+    using it on this computer; keep `<config>/pocketcontext/` until the user's chosen
+    retention ends, because rollback needs it.
+
+Hosted instances are not on this runbook; see [hosting](hosting.md).
+
+Rollback before any write through 0.25: stop it, restore the old executable and start.
+After writes, restore the complete stopped backup with its matching binary; that returns
+the project to backup time, so preserve later work first. Never force an older release
+past a refused database.
+
 Choose one release for each project. Different projects can use different releases
 on the same computer, with separate project folders, registered absolute binary
 paths and dedicated skills. One project's upgrade does not upgrade the others.
@@ -7,9 +69,9 @@ Only one server may open a given project at a time.
 
 ## Compatibility
 
-Application version and database format are separate. PocketContext 0.24.0 uses
-logical database format 1, the single-user format used by 0.11.x–0.23.1. Upgrading
-those projects to 0.24.0 requires no data conversion. The startup guard checks the
+Application version and database format are separate. PocketContext Atlas 0.25.0 uses
+logical database format 1, the single-user format used by 0.11.x–0.24.x. Upgrading
+those projects to 0.25.0 requires no data conversion. The startup guard checks the
 recorded application and PocketBase system migrations on the private working copy
 before PocketBase bootstrap; unknown migrations and unsupported formats are
 refused. Databases from

@@ -74,7 +74,7 @@ def main():
         assert request(port, "/_/")[0] == 404
         assert request(port, "/.well-known/oauth-authorization-server")[0] == 200
         docker("exec", "-i", name, "sh", "-c", "cat > /tmp/synthetic-note.txt", input="Hosted persistence synthetic evidence.\n")
-        docker("exec", name, "pocketcontext", "ingest", "/tmp/synthetic-note.txt", "--title", "Synthetic hosted persistence")
+        docker("exec", name, "pocketcontext-atlas", "ingest", "/tmp/synthetic-note.txt", "--title", "Synthetic hosted persistence")
         docker("stop", "--time", "100", name)
         assert docker("inspect", "--format", "{{.State.ExitCode}}", name).stdout.strip() == "0"
         docker("rm", name)
@@ -82,14 +82,14 @@ def main():
         assert repeated.returncode != 0
         docker("run", "-d", "--name", name, "-p", "127.0.0.1::80", "-v", volume + ":/storage", *options, args.image)
         wait_ready(name)
-        result = docker("exec", name, "pocketcontext", "sql", "SELECT title FROM sources").stdout
+        result = docker("exec", name, "pocketcontext-atlas", "sql", "SELECT title FROM sources").stdout
         assert "Synthetic hosted persistence" in result or "Hosted persistence" in result
         # Kill/recreate changes container hostname. Persistent lease and cache must recover.
         docker("kill", name)
         docker("rm", name)
         docker("run", "-d", "--name", name, "-p", "127.0.0.1::80", "-v", volume + ":/storage", *options, args.image)
         wait_ready(name)
-        result = docker("exec", name, "pocketcontext", "sql", "SELECT title FROM sources").stdout
+        result = docker("exec", name, "pocketcontext-atlas", "sql", "SELECT title FROM sources").stdout
         assert "Synthetic hosted persistence" in result or "Hosted persistence" in result
         docker("stop", "--time", "100", name)
         assert docker("inspect", "--format", "{{.State.ExitCode}}", name).stdout.strip() == "0"

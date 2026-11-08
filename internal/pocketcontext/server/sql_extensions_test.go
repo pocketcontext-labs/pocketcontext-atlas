@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
-	"github.com/pocketcontext-labs/pocketcontext/internal/pocketcontext/sqlread"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/pocketcontext/sqlread"
 )
 
 func TestSQLJSONAndPercentilesHTTP(t *testing.T) {

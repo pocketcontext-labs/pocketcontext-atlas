@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/pocketcontext-labs/pocketcontext/internal/pocketcontext/sqliteuri"
+	"github.com/pocketcontext-labs/pocketcontext-core/sqliteuri"
 	"io"
 	"math"
 	"path/filepath"
@@ -22,7 +22,7 @@ import (
 	"unicode/utf8"
 
 	sqlite3 "github.com/mattn/go-sqlite3"
-	"github.com/pocketcontext-labs/pocketcontext/internal/pocketcontext/tracing"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/pocketcontext/tracing"
 )
 
 const (

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/buildinfo"
 	"io"
 	"net/http"
 	"net/url"
@@ -16,8 +17,6 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-
-	"github.com/pocketcontext-labs/pocketcontext/internal/bundle"
 )
 
 // Files that are not text are converted by the user's agent, never by the
@@ -84,7 +83,7 @@ func (c *Client) Extract(sourceID string, o ExtractOptions) (map[string]any, err
 
 func (c *Client) extractContent(sourceID, abs string, content []byte, o ExtractOptions) (map[string]any, error) {
 	if !idPattern.MatchString(sourceID) {
-		return nil, fail(2, "source ID must be 15 lowercase letters or digits; list sources awaiting extraction with `pocketcontext pending`")
+		return nil, fail(2, "source ID must be 15 lowercase letters or digits; list sources awaiting extraction with `pocketcontext-atlas pending`")
 	}
 	if n := utf8.RuneCountInString(o.Tool); n < 1 || n > toolRunes || strings.ContainsAny(o.Tool, "\r\n") {
 		return nil, fail(2, "--tool must be one line of 1–300 characters naming how the text was produced, e.g. \"claude-opus-5-5 read the PDF\"")
@@ -173,7 +172,7 @@ func (c *Client) Pending(limit int) (map[string]any, error) {
 // a new file.
 func (c *Client) Original(sourceID, out string) (map[string]any, error) {
 	if !idPattern.MatchString(sourceID) {
-		return nil, fail(2, "source ID must be 15 lowercase letters or digits; list sources awaiting extraction with `pocketcontext pending`")
+		return nil, fail(2, "source ID must be 15 lowercase letters or digits; list sources awaiting extraction with `pocketcontext-atlas pending`")
 	}
 	if out == "" {
 		return nil, fail(2, "--out FILE is required")
@@ -246,7 +245,7 @@ func (c *Client) download(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "PocketContext/"+bundle.Version)
+	req.Header.Set("User-Agent", "PocketContext/"+buildinfo.Version)
 	if c.token != "" {
 		req.Header.Set("Authorization", c.token)
 	}

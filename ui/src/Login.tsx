@@ -143,7 +143,7 @@ export default function Login({
               </button>
             </form>
             <p className="login-hint">
-              Use the password you chose with <code>pocketcontext init</code>,
+              Use the password you chose with <code>pocketcontext-atlas init</code>,
               or run <code>pocketcontext open</code> to sign in with a
               single-use link.
             </p>

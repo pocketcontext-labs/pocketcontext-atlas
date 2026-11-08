@@ -48,7 +48,7 @@ func (c *Client) CreateSpace(name string) (map[string]any, error) {
 		out["created"] = false
 		return out, nil
 	default:
-		return nil, fail(2, "%d spaces are named %q (%s); rename one with `pocketcontext rename-space ID NAME`", len(rows), name, spaceIDs(rows))
+		return nil, fail(2, "%d spaces are named %q (%s); rename one with `pocketcontext-atlas rename-space ID NAME`", len(rows), name, spaceIDs(rows))
 	}
 	data, err := c.Must("POST", records("spaces"), map[string]any{"name": name})
 	if err != nil {

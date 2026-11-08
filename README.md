@@ -1,8 +1,10 @@
-# PocketContext
+# PocketContext Atlas
+
+Formerly PocketContext; the knowledge base of the PocketContext family, a single binary named `pocketcontext-atlas`. See [what changed in 0.25.0](docs/releases/0.25.0.md) and the [upgrade runbook](docs/upgrades.md) for moving an existing PocketContext 0.24.x installation.
 
 A local knowledge base in one binary. Ingest notes and other files as immutable sources, have an agent synthesize pages from their passages, and publish revisions in which every claim cites its evidence. Pages keep their full revision history; publications switch a set of revisions atomically; spaces partition the knowledge of the project's one user; full-text search covers published pages and source passages. The binary extracts passages from UTF-8 text itself; for PDFs, images, audio and other formats, the agent converts the stored original to text and records it as derived passages, so the binary never parses those formats. The binary contains the server (on PocketBase), the browser reader, the command-line client and a private tunnel to other computers, and installs an agent skill for Claude Code, Codex and Antigravity. The core knowledge base needs no other runtime.
 
-See [what changed in 0.24.0](docs/releases/0.24.0.md): remote MCP fixes for clients that omit the OAuth resource, desktop loopback callbacks and explicit tool hints, plus metadata-only diagnostics and opt-in hosted containers. Version [0.23.1](docs/releases/0.23.1.md) fixed a server crash during MCP knowledge reads. Remote MCP uses the native HTTPS domain with browser authorization and knowledge tools; see [MCP setup](docs/mcp.md).
+Earlier: [0.24.0](docs/releases/0.24.0.md): remote MCP fixes for clients that omit the OAuth resource, desktop loopback callbacks and explicit tool hints, plus metadata-only diagnostics and opt-in hosted containers. Version [0.23.1](docs/releases/0.23.1.md) fixed a server crash during MCP knowledge reads. Remote MCP uses the native HTTPS domain with browser authorization and knowledge tools; see [MCP setup](docs/mcp.md).
 
 Since 0.22.0, built-in reader chat and the ACP host integration have been removed. Use your external agent with the installed PocketContext skill for questions, ingestion and synthesis. The phone reader continues to provide authenticated browsing and search.
 
@@ -33,7 +35,7 @@ enrollment, recovery, credentials and validation requirements.
 
 ```
 PocketContext/              ← any folder; may be in iCloud Drive, OneDrive, Dropbox or Google Drive
-  pocketcontext[.exe]       the binary (recommended here; it can live anywhere)
+  pocketcontext-atlas[.exe]       the binary (recommended here; it can live anywhere)
   pocketcontext.db          the database
   pocketcontext.json        name, port and project ID (no secrets)
   storage/                  immutable originals of ingested files
@@ -46,33 +48,33 @@ The database defaults to `pocketcontext.db` beside the binary; `--db PATH` or `P
 Linux (amd64, arm64) and macOS (arm64, 15 or later):
 
 ```sh
-curl -fsSL https://github.com/pocketcontext-labs/pocketcontext/releases/latest/download/install.sh | sh -s -- "$HOME/Library/Mobile Documents/com~apple~CloudDocs/PocketContext"
+curl -fsSL https://github.com/pocketcontext-labs/pocketcontext-atlas/releases/latest/download/install.sh | sh -s -- "$HOME/Library/Mobile Documents/com~apple~CloudDocs/PocketContext"
 ```
 
 Windows (PowerShell):
 
 ```powershell
 $env:POCKETCONTEXT_INSTALL_DIR = "$env:OneDrive\PocketContext"
-irm https://github.com/pocketcontext-labs/pocketcontext/releases/latest/download/install.ps1 | iex
+irm https://github.com/pocketcontext-labs/pocketcontext-atlas/releases/latest/download/install.ps1 | iex
 ```
 
-Install into the project folder, beside `pocketcontext.db`, so commands find its database without `--db`. The installers refuse an existing executable unless `POCKETCONTEXT_REPLACE_VERSION` explicitly matches its inspected version. Before replacement, stop its servers and tunnels and back up each complete project with its matching binary; follow [the upgrade procedure](docs/upgrades.md). Projects from 0.11.x–0.23.1 open with 0.24.0 without data conversion; 0.10.0 and earlier remain unsupported. Different projects may keep different releases.
+Install into the project folder, beside `pocketcontext.db`, so commands find its database without `--db`. The installers refuse an existing `pocketcontext-atlas` or earlier `pocketcontext` executable unless `POCKETCONTEXT_REPLACE_VERSION` explicitly matches its inspected version. Before replacement, stop its servers and tunnels and back up each complete project with its matching binary; follow [the upgrade procedure](docs/upgrades.md). Projects from 0.11.x–0.23.1 open with 0.24.0 without data conversion; 0.10.0 and earlier remain unsupported. Different projects may keep different releases.
 
-Linux and macOS binaries share the name `pocketcontext`. For synced projects used across operating systems, install binaries in machine-local versioned directories and register an absolute binary path with an explicit database path. Keep synced project folders downloaded on computers that run them. The installers have no default folder: name it as the argument of `install.sh` (or `POCKETCONTEXT_INSTALL_DIR`) or in `POCKETCONTEXT_INSTALL_DIR` for `install.ps1`. Each verifies the archive against the release's `checksums.txt` and installs only the executable. Releases are immutable GitHub releases; the Windows binary is unsigned, so SmartScreen may ask for confirmation.
+Linux and macOS binaries share the name `pocketcontext-atlas`. For synced projects used across operating systems, install binaries in machine-local versioned directories and register an absolute binary path with an explicit database path. Keep synced project folders downloaded on computers that run them. The installers have no default folder: name it as the argument of `install.sh` (or `POCKETCONTEXT_INSTALL_DIR`) or in `POCKETCONTEXT_INSTALL_DIR` for `install.ps1`. Each verifies the archive against the release's `checksums.txt` and installs only the executable. Releases are immutable GitHub releases; the Windows binary is unsigned, so SmartScreen may ask for confirmation.
 
 ## Quick start
 
 ```sh
-./pocketcontext init --name Research                          # asks for a reader password
-./pocketcontext environment                                   # inspect this session before reader setup
-./pocketcontext open                                          # reader on a desktop; skips SSH/headless sessions
-./pocketcontext ingest notes/meeting.md --title "Meeting notes"
-./pocketcontext search "budget"
-./pocketcontext skill                                         # Claude Code, Codex, Antigravity
-./pocketcontext stop
+./pocketcontext-atlas init --name Research                          # asks for a reader password
+./pocketcontext-atlas environment                                   # inspect this session before reader setup
+./pocketcontext-atlas open                                          # reader on a desktop; skips SSH/headless sessions
+./pocketcontext-atlas ingest notes/meeting.md --title "Meeting notes"
+./pocketcontext-atlas search "budget"
+./pocketcontext-atlas skill                                         # Claude Code, Codex, Antigravity
+./pocketcontext-atlas stop
 ```
 
-Background startup is headless: local commands use a private socket in the per-machine cache. `open` activates the reader on the configured loopback port when a usable desktop browser is detected and leaves TCP enabled until shutdown. In SSH, headless or uncertain sessions it skips reader setup before starting a server, enabling TCP or issuing a sign-in code. Use `--no-browser` only to explicitly request a manual link for a browser known to reach the address; `--skip-reader` explicitly omits the reader step. New projects choose an available port starting at 8096, excluding registered ports; `init --port PORT` selects one explicitly. A new project has one space, `Default`, which the reader and CLI use unless another is selected. Create more with `create-space NAME`, choose one with `--space` (ID or unique name) or `POCKETCONTEXT_SPACE`, and change the default with `default-space SPACE`; see [docs/spaces.md](docs/spaces.md). Run `pocketcontext help` for every command.
+Background startup is headless: local commands use a private socket in the per-machine cache. `open` activates the reader on the configured loopback port when a usable desktop browser is detected and leaves TCP enabled until shutdown. In SSH, headless or uncertain sessions it skips reader setup before starting a server, enabling TCP or issuing a sign-in code. Use `--no-browser` only to explicitly request a manual link for a browser known to reach the address; `--skip-reader` explicitly omits the reader step. New projects choose an available port starting at 8096, excluding registered ports; `init --port PORT` selects one explicitly. A new project has one space, `Default`, which the reader and CLI use unless another is selected. Create more with `create-space NAME`, choose one with `--space` (ID or unique name) or `POCKETCONTEXT_SPACE`, and change the default with `default-space SPACE`; see [docs/spaces.md](docs/spaces.md). Run `pocketcontext-atlas help` for every command.
 
 ## Authentication
 
@@ -84,31 +86,31 @@ A project has exactly one account, created by `init`; a second account is refuse
 
 ## Several computers
 
-Only one computer may run a project at a time. `pocketcontext.db.lease` carries a heartbeat; another computer refuses to start for two minutes after the last one (`--take-over` overrides when that computer is off). Run `pocketcontext stop` before switching computers and wait for the sync client to finish.
+Only one computer may run a project at a time. `pocketcontext.db.lease` carries a heartbeat; another computer refuses to start for two minutes after the last one (`--take-over` overrides when that computer is off). Run `pocketcontext-atlas stop` before switching computers and wait for the sync client to finish.
 
-If the synced `pocketcontext.db` changes while this computer has unsaved changes, nothing is overwritten. This computer's version is kept in `pocketcontext.db.conflict-<host>-<time>.db`, the server reports it, and the next start asks for `pocketcontext recover --keep local` (the other computer's file is saved as `pocketcontext.db.replaced-<time>.db`) or `--keep synced` (this computer's work stays in the conflict copy). Keep the folder available offline: online-only placeholders make the database or originals unavailable.
+If the synced `pocketcontext.db` changes while this computer has unsaved changes, nothing is overwritten. This computer's version is kept in `pocketcontext.db.conflict-<host>-<time>.db`, the server reports it, and the next start asks for `pocketcontext-atlas recover --keep local` (the other computer's file is saved as `pocketcontext.db.replaced-<time>.db`) or `--keep synced` (this computer's work stays in the conflict copy). Keep the folder available offline: online-only placeholders make the database or originals unavailable.
 
 ## Named knowledge bases and skills
 
 `init --name Research` names a new knowledge base; `name [NAME]` shows or changes the name. Its stable instance ID identifies the project independently of the name. `status` and `whoami` report both. A space remains a partition inside one knowledge base, not another database.
 
-`skill` registers the knowledge base privately and generates its own skill under `os.UserConfigDir()/pocketcontext/profiles/<id>/skill/`. It installs a global `pocketcontext` router for each detected agent. The router discovers the registry, verifies the chosen binary and project identity, then loads only that knowledge base's skill. Ask “search pocketcontext Research” or “ingest in pocketcontext Research, space Notes.” Reads across knowledge bases are labelled; citations never cross them. Writes require an explicit knowledge base or an explicitly selected default.
+`skill` registers the knowledge base privately and generates its own skill under `os.UserConfigDir()/pocketcontext-atlas/profiles/<id>/skill/`. It installs a global `pocketcontext` router for each detected agent. The router discovers the registry, verifies the chosen binary and project identity, then loads only that knowledge base's skill. Ask “search pocketcontext Research” or “ingest in pocketcontext Research, space Notes.” Reads across knowledge bases are labelled; citations never cross them. Writes require an explicit knowledge base or an explicitly selected default.
 
 ```sh
-./pocketcontext profile list
-./pocketcontext profile default Research
-./pocketcontext profile check Research
-./pocketcontext profile update Research --name Reading
-./pocketcontext profile remove Reading  # registry entry only, never data
-./pocketcontext profile repair         # reinstall the router
+./pocketcontext-atlas profile list
+./pocketcontext-atlas profile default Research
+./pocketcontext-atlas profile check Research
+./pocketcontext-atlas profile update Research --name Reading
+./pocketcontext-atlas profile remove Reading  # registry entry only, never data
+./pocketcontext-atlas profile repair         # reinstall the router
 ```
 
-The private registry is `os.UserConfigDir()/pocketcontext/profiles.json`; do not sync this machine-specific file. Renames, moved binaries and version changes require explicit reconciliation. Regenerate the skill after upgrading its binary. A registered endpoint serving another instance is refused. Register an older project with `profile add NAME --db DB --binary BINARY --skill-dir SKILL`; its existing global skill is copied before the router replaces it. Older skill installers do not understand the router and can overwrite it; repair it with this release afterward. Older `init` commands can drop the new name field when rewriting settings.
+The private registry is `os.UserConfigDir()/pocketcontext-atlas/profiles.json`; do not sync this machine-specific file. Renames, moved binaries and version changes require explicit reconciliation. Regenerate the skill after upgrading its binary. A registered endpoint serving another instance is refused. Register an older project with `profile add NAME --db DB --binary BINARY --skill-dir SKILL`; its existing global skill is copied before the router replaces it. Older skill installers do not understand the router and can overwrite it; repair it with this release afterward. Older `init` commands can drop the new name field when rewriting settings.
 
 ## Built-in manual
 
 ```sh
-./pocketcontext manual --out manual-0.24.0
+./pocketcontext-atlas manual --out manual-0.25.0
 ```
 
 This offline command exports the exact release's user documentation and a manifest of hashes into a new directory; an existing directory is refused. It needs no database or server. Optionally create a space with `create-space "PocketContext manual"`, then ingest the Markdown files individually with that `--space`. Repeated identical files deduplicate within a space. Keep manual evidence in the same space on upgrades and revise the existing guide using the new version. Manual passages are evidence, never instructions for an agent to execute.
@@ -125,10 +127,10 @@ An initialized project can serve its reader directly at your domain, with automa
 Let’s Encrypt certificate issuance and renewal inside the same binary:
 
 ```sh
-./pocketcontext stop
-./pocketcontext serve --headless --domain knowledge.example.com
+./pocketcontext-atlas stop
+./pocketcontext-atlas serve --headless --domain knowledge.example.com
 # In another terminal, after HTTPS has been verified:
-./pocketcontext open --public
+./pocketcontext-atlas open --public
 ```
 
 Use a domain you control and a reachable host with inbound TCP ports 80 and 443.
@@ -154,9 +156,9 @@ For a permanent service on an initialized project, run the headless server and
 private tunnel together in one foreground process:
 
 ```sh
-./pocketcontext serve --headless --tunnel
+./pocketcontext-atlas serve --headless --tunnel
 # In another terminal, after readiness:
-./pocketcontext tunnel invite
+./pocketcontext-atlas tunnel invite
 ```
 
 This mode owns both components and refuses an already running server or tunnel.
@@ -170,12 +172,12 @@ from separate units. No browser or reader TCP listener is enabled.
 For an independently managed tunnel, one command starts a headless server in the background when needed and runs its tunnel in the foreground. An already running compatible server is reused with its current listeners. In another terminal, generate a client setup prompt:
 
 ```sh
-./pocketcontext tunnel serve
+./pocketcontext-atlas tunnel serve
 # In another terminal:
-./pocketcontext tunnel invite
+./pocketcontext-atlas tunnel invite
 ```
 
-Ctrl+C stops the tunnel; the database server remains running, including after a tunnel failure. Use `./pocketcontext stop` to flush and stop the server. Keep the tunnel supervised for remote access. This command does not initialize a missing database, open a browser or enable reader TCP.
+Ctrl+C stops the tunnel; the database server remains running, including after a tunnel failure. Use `./pocketcontext-atlas stop` to flush and stop the server. Keep the tunnel supervised for remote access. This command does not initialize a missing database, open a browser or enable reader TCP.
 
 Copy the complete generated prompt into the other computer's agent conversation. It contains the release-pinned installation instructions and invitation together. The agent checks that it is executing on the intended reader computer, installs or reuses the client, passes the embedded JSON to `tunnel join --stdin`, verifies the server identity, signs in and saves the connection. Reader sign-in follows when the client has a usable desktop browser. A client reached over SSH can pair for CLI work with `--skip-reader` without issuing a reader code. There is no separate setup prompt, invitation file or login code to copy. The client never creates a database or reads the server's local key. The server agent asks you to return after desktop setup and confirm whether the reader opened and the knowledge base was accessible, or share its error/completion report. The desktop agent completes sign-in first; this return checkpoint verifies the result and guides recovery. The invitation contains no reader sign-in URL: the desktop client generates its fresh two-minute link only after connecting.
 
@@ -219,11 +221,11 @@ Requires Go (see `go.mod`) with CGO and a C compiler, Node.js 24 and pnpm 10.33.
 
 ```sh
 make ui      # build the reader into ui/dist (embedded by go build)
-make build   # bin/pocketcontext
+make build   # bin/pocketcontext-atlas
 make test    # Go unit tests, including the vendored server's
-make names   # name check of the repository and bin/pocketcontext (tests/name_check.py)
+make names   # name check of the repository and bin/pocketcontext-atlas (tests/name_check.py)
 make e2e     # name check, then CLI and source-search end-to-end tests with synthetic notes in a temporary folder
-make windows ZIG=/path/to/zig   # cross-compile bin/windows_amd64/pocketcontext.exe
+make windows ZIG=/path/to/zig   # cross-compile bin/windows_amd64/pocketcontext-atlas.exe
 ```
 
 Native Windows builds use MinGW-w64 gcc.
@@ -240,15 +242,15 @@ Cloudflare preview constraints. With Nix and devenv installed, start with
 Build the executable once with `make ui && make build`, then use Vite hot reload while editing `ui/src` in Codex. Choose a separate local development project with synthetic notes. Initialize it once and stop the server that `init` starts:
 
 ```sh
-bin/pocketcontext init --db /absolute/path/to/dev/pocketcontext.db --port 18096
-bin/pocketcontext stop --db /absolute/path/to/dev/pocketcontext.db
+bin/pocketcontext-atlas init --db /absolute/path/to/dev/pocketcontext.db --port 18096
+bin/pocketcontext-atlas stop --db /absolute/path/to/dev/pocketcontext.db
 node scripts/dev.mjs --db /absolute/path/to/dev/pocketcontext.db
 # Equivalent: make dev DB=/absolute/path/to/dev/pocketcontext.db
 ```
 
-The launcher requires an explicit existing database, reads its port from `pocketcontext.json`, starts Vite on `127.0.0.1:5173`, then runs the existing binary with `serve --ui-dev http://127.0.0.1:5173`. It refuses occupied ports, waits for readiness and stops its processes on Ctrl-C, using the normal authenticated shutdown, which writes the database back. It neither installs dependencies nor rebuilds the executable. Use `--binary PATH` for another executable or `--vite-port PORT` when 5173 is occupied. On Windows use `bin/pocketcontext.exe` for the initialization commands; the Node launcher selects that default automatically.
+The launcher requires an explicit existing database, reads its port from `pocketcontext.json`, starts Vite on `127.0.0.1:5173`, then runs the existing binary with `serve --ui-dev http://127.0.0.1:5173`. It refuses occupied ports, waits for readiness and stops its processes on Ctrl-C, using the normal authenticated shutdown, which writes the database back. It neither installs dependencies nor rebuilds the executable. Use `--binary PATH` for another executable or `--vite-port PORT` when 5173 is occupied. On Windows use `bin/pocketcontext-atlas.exe` for the initialization commands; the Node launcher selects that default automatically.
 
-Open the reader at the project port (18096 in this example) and sign in with the development project's password. Alternatively, run `bin/pocketcontext open --db /absolute/path/to/dev/pocketcontext.db` in another terminal. Keep that browser open beside the Codex chat. CSS and compatible React edits update immediately; some module changes reload the page. The browser stays on PocketContext's origin: Go serves authentication and APIs, and proxies UI modules and the hot-reload WebSocket to Vite. The Vite port is an internal development upstream.
+Open the reader at the project port (18096 in this example) and sign in with the development project's password. Alternatively, run `bin/pocketcontext-atlas open --db /absolute/path/to/dev/pocketcontext.db` in another terminal. Keep that browser open beside the Codex chat. CSS and compatible React edits update immediately; some module changes reload the page. The browser stays on PocketContext's origin: Go serves authentication and APIs, and proxies UI modules and the hot-reload WebSocket to Vite. The Vite port is an internal development upstream.
 
 After downloading an original, restarting Vite may require manually refreshing the reader to reconnect hot reload.
 
@@ -256,24 +258,23 @@ After downloading an original, restarting Vite may require manually refreshing t
 
 Hot reload does not type-check. Run `pnpm --dir ui typecheck`, `pnpm --dir ui test`, and `pnpm --dir ui build` after changes, plus `node --test tests/dev_launcher.test.mjs` after launcher changes. Before shipping, rebuild the embedded reader and executable and run the Go, name and end-to-end checks above.
 
-For a source-directory volume check, run `python3 tests/source_directory.py --binary bin/pocketcontext`; it creates 2,001 small synthetic originals in an isolated project and checks first, middle and last pages plus each sort order.
+For a source-directory volume check, run `python3 tests/source_directory.py --binary bin/pocketcontext-atlas`; it creates 2,001 small synthetic originals in an isolated project and checks first, middle and last pages plus each sort order.
 
-The browser regression check uses synthetic data and a temporary UI copy. Install its pinned Chromium once with `pnpm --dir ui exec playwright install chromium`, then run `node tests/ui_dev_browser.mjs --binary bin/pocketcontext`. Run `node tests/reader_ui_browser.mjs --binary bin/pocketcontext` for reader navigation, version links, Overview, All pages, search and evidence checks at desktop, split-window and mobile widths. Add `--screenshots /absolute/path/to/output` to retain screenshots in a chosen folder. CI runs both checks on Linux amd64. Use `--browser /path/to/chromium` for a custom browser executable, or `--playwright /absolute/path/to/playwright/index.mjs` for a separate Playwright installation.
+The browser regression check uses synthetic data and a temporary UI copy. Install its pinned Chromium once with `pnpm --dir ui exec playwright install chromium`, then run `node tests/ui_dev_browser.mjs --binary bin/pocketcontext-atlas`. Run `node tests/reader_ui_browser.mjs --binary bin/pocketcontext-atlas` for reader navigation, version links, Overview, All pages, search and evidence checks at desktop, split-window and mobile widths. Add `--screenshots /absolute/path/to/output` to retain screenshots in a chosen folder. CI runs both checks on Linux amd64. Use `--browser /path/to/chromium` for a custom browser executable, or `--playwright /absolute/path/to/playwright/index.mjs` for a separate Playwright installation.
 
 ## Layout
 
 | Path | Content |
 | --- | --- |
-| `cmd/pocketcontext` | entry point |
-| `internal/bundle` | project resolution, working copy and write-back, lease, local routes, server lifecycle |
+| `cmd/pocketcontext-atlas` | entry point |
+| `internal/appconfig`, `internal/atlaspolicy` | runtime construction on `pocketcontext-core`, Atlas identity, public route allowlist and copy |
 | `internal/client` | CLI commands, ingestion and extraction, search, lint, skill installation |
-| `internal/tunnel` | `tunnel serve` and `tunnel forward` on tailcat: identity, port filter, loopback proxy |
 | `internal/pocketcontext` | vendored server (SQL reads, search); see `VENDORED.md` |
 | `pb_hooks`, `pb_migrations` | schema and server-side rules |
 | `server.json` | SQL allowlist, limits and search index configuration |
 | `ui` | browser reader |
-| `embed.go` | embeds `pb_hooks`, `pb_migrations`, `server.json`, `ui/dist` and `skills/pocketcontext` |
-| `skills/pocketcontext` | skill template (`SKILL.remote.md` for `skill --url`); `pocketcontext skill` fills in absolute paths |
+| `embed.go` | embeds `pb_hooks`, `pb_migrations`, `server.json`, `ui/dist` and `skills/pocketcontext-atlas` |
+| `skills/pocketcontext-atlas` | skill template (`SKILL.remote.md` for `skill --url`); `pocketcontext-atlas skill` fills in absolute paths |
 | `tests/e2e.py` | end-to-end test (standard-library Python) |
 | `tests/name_check.py` | name check of the repository and the binary |
 | `tests/test_release.py` | release tooling tests |

@@ -12,9 +12,9 @@ import (
 
 	"ganigeorgiev.com/pocketbase/pocketbase/apis"
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
-	"github.com/pocketcontext-labs/pocketcontext/internal/pocketcontext/searchread"
-	"github.com/pocketcontext-labs/pocketcontext/internal/pocketcontext/sqlread"
-	"github.com/pocketcontext-labs/pocketcontext/internal/pocketcontext/tracing"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/pocketcontext/searchread"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/pocketcontext/sqlread"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/pocketcontext/tracing"
 )
 
 // Search indexes may only contain fields already exposed by shared SQL. Actual

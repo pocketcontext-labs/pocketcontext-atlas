@@ -19,7 +19,8 @@ import (
 
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/router"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/pocketcontext-labs/pocketcontext/internal/bundle"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/appconfig"
+	"github.com/pocketcontext-labs/pocketcontext-core/appserver"
 )
 
 // The protocol fixture injects the ordinary user identity that the separately
@@ -299,7 +300,7 @@ func mcpRealAPI(t *testing.T) (http.Handler, string) {
 	t.Setenv("APPDATA", filepath.Join(root, "config"))
 	t.Setenv("POCKETCONTEXT_URL", "")
 	t.Setenv("POCKETCONTEXT_SPACE", "")
-	p, err := bundle.Resolve(filepath.Join(root, "project", "pocketcontext.db"))
+	p, err := appconfig.Runtime.Resolve(filepath.Join(root, "project", "pocketcontext.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -314,7 +315,7 @@ func mcpRealAPI(t *testing.T) (http.Handler, string) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
-	go func() { done <- bundle.ServeContext(ctx, p, bundle.ServeOptions{Headless: true}) }()
+	go func() { done <- appserver.ServeContext(ctx, p, appserver.ServeOptions{Headless: true}) }()
 	t.Cleanup(func() {
 		cancel()
 		select {
@@ -328,7 +329,7 @@ func mcpRealAPI(t *testing.T) (http.Handler, string) {
 	})
 	deadline := time.Now().Add(15 * time.Second)
 	for {
-		if _, err := bundle.Health(p); err == nil {
+		if _, err := appserver.Health(p); err == nil {
 			break
 		}
 		if time.Now().After(deadline) {
@@ -336,7 +337,7 @@ func mcpRealAPI(t *testing.T) (http.Handler, string) {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	if _, err := bundle.LocalCall(p, "/api/bundle/account", map[string]string{"password": "synthetic-mcp-password"}); err != nil {
+	if _, err := appserver.LocalCall(p, "/api/bundle/account", map[string]string{"password": "synthetic-mcp-password"}); err != nil {
 		t.Fatal(err)
 	}
 	c, err := New(p, "")

@@ -14,7 +14,7 @@ import (
 
 // Exercises the real stage planner, immutable evidence hooks, MCP error path,
 // and same-run recovery. Hosted rate budgets are exercised separately against
-// the same API in bundle.TestHostedBulkConsecutiveBatches.
+// the same API in appserver.TestHostedBulkConsecutiveBatches.
 func TestMCPBulkMigrationResume(t *testing.T) {
 	api, token := mcpRealAPI(t)
 	batches, interrupted := 0, false

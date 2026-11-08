@@ -21,15 +21,15 @@ COPY --from=reader /ui/dist ./ui/dist
 ARG REVISION
 RUN test -n "$REVISION" && \
     go build -trimpath -tags "$(cat build-tags.txt)" \
-    -ldflags "-s -w -X github.com/pocketcontext-labs/pocketcontext/internal/bundle.Version=hosted-$REVISION" \
-    -o /out/pocketcontext ./cmd/pocketcontext
+    -ldflags "-s -w -X github.com/pocketcontext-labs/pocketcontext-atlas/internal/buildinfo.Version=hosted-$REVISION" \
+    -o /out/pocketcontext-atlas ./cmd/pocketcontext-atlas
 
 FROM debian:trixie-slim@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4
 RUN --mount=type=secret,id=proxy_ca \
     if [ -f /run/secrets/proxy_ca ]; then export SSL_CERT_FILE=/run/secrets/proxy_ca; fi; \
     apt-get update && apt-get install -y --no-install-recommends ca-certificates tini python3 python3-boto3 \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=build /out/pocketcontext /usr/local/bin/pocketcontext
+COPY --from=build /out/pocketcontext-atlas /usr/local/bin/pocketcontext-atlas
 COPY --chmod=0755 docker/entrypoint.py /usr/local/bin/pocketcontext-container
 # ONCE owns the volume and does not offer a volume UID setting. The public port is 80.
 # No Docker socket or host paths are mounted into this application.
@@ -39,8 +39,8 @@ ENV POCKETCONTEXT_DB=/storage/project/pocketcontext.db \
     XDG_STATE_HOME=/storage/private/state
 ARG REVISION
 ENV POCKETCONTEXT_REVISION=$REVISION
-LABEL org.opencontainers.image.title="PocketContext" \
-      org.opencontainers.image.source="https://github.com/pocketcontext-labs/pocketcontext" \
+LABEL org.opencontainers.image.title="PocketContext Atlas" \
+      org.opencontainers.image.source="https://github.com/pocketcontext-labs/pocketcontext-atlas" \
       org.opencontainers.image.revision=$REVISION
 VOLUME /storage
 EXPOSE 80

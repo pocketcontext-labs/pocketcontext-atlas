@@ -24,21 +24,22 @@ def main():
         root = Path(temp)
         assets, mocks, target = root / 'assets', root / 'mocks', root / 'Cloud Drive' / 'Project'
         assets.mkdir(); mocks.mkdir(); target.mkdir(parents=True)
-        exe = 'pocketcontext.exe' if windows else 'pocketcontext'
+        exe = 'pocketcontext-atlas.exe' if windows else 'pocketcontext-atlas'
+        earlier_exe = 'pocketcontext.exe' if windows else 'pocketcontext'
         payload = assets / exe
         shutil.copyfile(binary, payload)
         payload.chmod(0o755)
         (assets / 'THIRD_PARTY_NOTICES.txt').write_text('synthetic test notices')
         release_version = '0.15.0'
         if windows:
-            archive = assets / f'pocketcontext_{release_version}_windows_amd64.zip'
+            archive = assets / f'pocketcontext-atlas_{release_version}_windows_amd64.zip'
             with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as bundle:
                 for name in (exe, 'THIRD_PARTY_NOTICES.txt'):
                     bundle.write(assets / name, name)
         else:
             system = 'darwin' if platform.system() == 'Darwin' else 'linux'
             arch = 'arm64' if platform.machine().lower() in ('arm64', 'aarch64') else 'amd64'
-            archive = assets / f'pocketcontext_{release_version}_{system}_{arch}.tar.gz'
+            archive = assets / f'pocketcontext-atlas_{release_version}_{system}_{arch}.tar.gz'
             with tarfile.open(archive, 'w:gz') as bundle:
                 for name in (exe, 'THIRD_PARTY_NOTICES.txt'):
                     bundle.add(assets / name, arcname=name)
@@ -102,6 +103,20 @@ cp "$PC_TEST_ASSETS/${url##*/}" "$output"
         assert destination.read_bytes() == original
         destination.unlink()
         assert 'no executable exists' in run(expected=version, success=False)
+        # The earlier product's executable is a replacement source, never replaced itself.
+        earlier = target / earlier_exe
+        shutil.copyfile(binary, earlier)
+        earlier.chmod(0o755)
+        (assets / 'checksums.txt').write_text(f'{digest}  {archive.name}\n')
+        assert 'already exists' in run(success=False) and not destination.exists()
+        assert 'differs' in run(expected='not-the-installed-version', success=False)
+        out = run(expected=version)
+        assert 'do not initialize it again' in out and destination.exists() and earlier.exists()
+        # A folder holding a database with neither executable is refused.
+        destination.unlink(); earlier.unlink()
+        (target / 'pocketcontext.db').write_bytes(b'')
+        assert 'existing database without' in run(expected=version, success=False)
+        (target / 'pocketcontext.db').unlink()
         destination.mkdir()
         assert 'regular file' in run(expected=version, success=False)
         destination.rmdir()

@@ -12,7 +12,7 @@ import (
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/hook"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/router"
-	"github.com/pocketcontext-labs/pocketcontext/internal/pocketcontext/tracing"
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/pocketcontext/tracing"
 )
 
 var correlationPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)

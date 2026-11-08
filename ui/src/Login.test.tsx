@@ -81,7 +81,7 @@ it("preserves the existing local password flow", async () => {
     expect(api.loginPassword).toHaveBeenCalledWith("synthetic-password"),
   );
   expect(screen.queryByLabelText("Email")).toBeNull();
-  expect(screen.getByText("pocketcontext init")).toBeInTheDocument();
+  expect(screen.getByText("pocketcontext-atlas init")).toBeInTheDocument();
 });
 
 it("fails closed when authentication configuration is unavailable", async () => {

@@ -54,7 +54,7 @@ func TestEveryCommandHasHelp(t *testing.T) {
 			t.Errorf("command %q has no help entry", command)
 			continue
 		}
-		if !strings.HasPrefix(h.usage, command) || h.text == "" || !strings.HasPrefix(h.example, "pocketcontext ") && !strings.Contains(h.example, "| pocketcontext ") {
+		if !strings.HasPrefix(h.usage, command) || h.text == "" || !strings.HasPrefix(h.example, "pocketcontext-atlas ") && !strings.Contains(h.example, "| pocketcontext-atlas ") {
 			t.Errorf("help of %q needs a usage line starting with the command, a description and an example", command)
 		}
 	}

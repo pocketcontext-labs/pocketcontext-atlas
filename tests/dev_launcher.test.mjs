@@ -13,7 +13,7 @@ import {
 test("launcher requires an explicit database and valid port", () => {
   assert.throws(() => parseOptions([]), /explicit development database/);
   assert.throws(
-    () => parseOptions(["--db", "--binary", "bin/pocketcontext"]),
+    () => parseOptions(["--db", "--binary", "bin/pocketcontext-atlas"]),
     /Usage/,
   );
   assert.throws(

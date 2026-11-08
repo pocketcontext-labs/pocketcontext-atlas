@@ -9,7 +9,7 @@ on:
       version:
         description: 'Version to build and validate (X.Y.Z); manual runs never publish'
         required: true
-        default: '0.1.0'
+        default: '0.25.0'
         type: string
 
 permissions:
@@ -82,7 +82,7 @@ jobs:
       - name: Unit tests
         run: |
           packages=./...
-          if [ "$RUNNER_OS" = Windows ]; then packages="./internal/bundle ./internal/client ./internal/tunnel ./internal/profiles"; fi
+          if [ "$RUNNER_OS" = Windows ]; then packages="./internal/appconfig ./internal/atlaspolicy ./internal/client"; fi
           CGO_ENABLED=1 go test -tags "$(cat build-tags.txt)" $packages
       - name: Reference and importer tests
         run: |
@@ -91,10 +91,12 @@ jobs:
       - name: Build and inspect the release binary; package notices
         run: $PY scripts/release.py build --version "$RELEASE_VERSION" --commit "$RELEASE_COMMIT" --platform "$RELEASE_PLATFORM" --output dist
       - name: End-to-end test of the release binary
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          exe=pocketcontext
-          if [ "$RUNNER_OS" = Windows ]; then exe=pocketcontext.exe; fi
-          "dist/$RELEASE_PLATFORM/$exe" version | grep -F "pocketcontext $RELEASE_VERSION ($RELEASE_COMMIT)"
+          exe=pocketcontext-atlas
+          if [ "$RUNNER_OS" = Windows ]; then exe=pocketcontext-atlas.exe; fi
+          "dist/$RELEASE_PLATFORM/$exe" version | grep -F "pocketcontext-atlas $RELEASE_VERSION ($RELEASE_COMMIT)"
           "$PY" tests/name_check.py --binary "dist/$RELEASE_PLATFORM/$exe"
           POCKETCONTEXT_REHEARSAL_BINARY="$PWD/dist/$RELEASE_PLATFORM/$exe" CGO_ENABLED=1 go test -tags "$(cat build-tags.txt)" ./internal/client -run TestInvitationCLIRehearsal -count=1 -timeout 4m
           "$PY" tests/installers.py --binary "dist/$RELEASE_PLATFORM/$exe"
@@ -144,7 +146,7 @@ jobs:
     permissions:
       contents: write
     concurrency:
-      group: pocketcontext-release-publication
+      group: pocketcontext-atlas-release-publication
       cancel-in-progress: false
     env:
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
@@ -184,16 +186,16 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          dir="$RUNNER_TEMP/Cloud Drive/PocketContext"
-          curl -fsSL "https://github.com/pocketcontext-labs/pocketcontext/releases/download/v$RELEASE_VERSION/install.sh" | sh -s -- "$dir"
-          echo "EXE=$dir/pocketcontext" >> "$GITHUB_ENV"
+          dir="$RUNNER_TEMP/Cloud Drive/PocketContext Atlas"
+          curl -fsSL "https://github.com/pocketcontext-labs/pocketcontext-atlas/releases/download/v$RELEASE_VERSION/install.sh" | sh -s -- "$dir"
+          echo "EXE=$dir/pocketcontext-atlas" >> "$GITHUB_ENV"
       - name: Install with install.ps1
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $env:POCKETCONTEXT_INSTALL_DIR = Join-Path $env:RUNNER_TEMP 'Cloud Drive\PocketContext'
-          irm "https://github.com/pocketcontext-labs/pocketcontext/releases/download/v$env:RELEASE_VERSION/install.ps1" | iex
-          "EXE=$env:POCKETCONTEXT_INSTALL_DIR\pocketcontext.exe" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          $env:POCKETCONTEXT_INSTALL_DIR = Join-Path $env:RUNNER_TEMP 'Cloud Drive\PocketContext Atlas'
+          irm "https://github.com/pocketcontext-labs/pocketcontext-atlas/releases/download/v$env:RELEASE_VERSION/install.ps1" | iex
+          "EXE=$env:POCKETCONTEXT_INSTALL_DIR\pocketcontext-atlas.exe" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
       - name: End-to-end test of the installed binary
         shell: bash
         run: $PY tests/e2e.py --binary "$EXE"

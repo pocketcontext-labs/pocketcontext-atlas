@@ -1,11 +1,11 @@
 package client
 
 import (
+	"github.com/pocketcontext-labs/pocketcontext-atlas/internal/appconfig"
+	"github.com/pocketcontext-labs/pocketcontext-core/appserver"
 	"net/mail"
 	"net/url"
 	"strings"
-
-	"github.com/pocketcontext-labs/pocketcontext/internal/bundle"
 )
 
 func validateHTTPSArgs(a *args) error {
@@ -28,7 +28,7 @@ func validateHTTPSArgs(a *args) error {
 		}
 		return nil
 	}
-	if err := bundle.ValidateHTTPSDomain(a.flags["domain"]); err != nil {
+	if err := appserver.ValidateHTTPSDomain(a.flags["domain"]); err != nil {
 		return fail(2, "%v", err)
 	}
 	if !a.bools["headless"] || a.bools["tcp-only"] || a.has("port") || a.has("ui-dev") {
@@ -46,12 +46,12 @@ func validateHTTPSArgs(a *args) error {
 
 // Public handoff is explicit and works from SSH. It must never start an ordinary
 // background server in place of the user's supervised HTTPS service.
-func openPublicReader(p *bundle.Project) (map[string]any, error) {
-	info, err := bundle.Health(p)
+func openPublicReader(p *appserver.Project) (map[string]any, error) {
+	info, err := appserver.Health(p)
 	if err != nil {
 		return nil, fail(1, "HTTPS hosting is not running; start the configured service before open --public: %v", err)
 	}
-	if err := bundle.CheckServerCompatibility(info); err != nil {
+	if err := appconfig.Runtime.CheckServerCompatibility(info); err != nil {
 		return nil, err
 	}
 	if info.Key != p.Key || (p.Config.Instance != "" && info.Instance != p.Config.Instance) {
@@ -62,10 +62,10 @@ func openPublicReader(p *bundle.Project) (map[string]any, error) {
 	}
 	base := info.PublicURL
 	u, err := url.Parse(base)
-	if err != nil || u.Scheme != "https" || u.User != nil || u.Opaque != "" || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || bundle.ValidateHTTPSDomain(u.Host) != nil {
+	if err != nil || u.Scheme != "https" || u.User != nil || u.Opaque != "" || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || appserver.ValidateHTTPSDomain(u.Host) != nil {
 		return nil, fail(1, "this server has no valid public HTTPS origin; start it with serve --headless --domain HOST")
 	}
-	data, err := bundle.LocalCall(p, "/api/bundle/login-code", map[string]any{"public": true})
+	data, err := appserver.LocalCall(p, "/api/bundle/login-code", map[string]any{"public": true})
 	if err != nil {
 		return nil, err
 	}

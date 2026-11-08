@@ -22,14 +22,14 @@ Every domain record carries a required `space`. References, citations, links, pu
 ## Client
 
 ```sh
-pocketcontext spaces                       # id, name, archived, default, selected
-pocketcontext create-space Research        # or the one space already named Research ("created": false)
-pocketcontext rename-space Research "Reading notes"
-pocketcontext archive-space "Reading notes"
-pocketcontext restore-space "Reading notes"
-pocketcontext default-space                # show the default
-pocketcontext default-space Research       # make Research the default
-pocketcontext whoami                       # URL, sign-in and the selected space
+pocketcontext-atlas spaces                       # id, name, archived, default, selected
+pocketcontext-atlas create-space Research        # or the one space already named Research ("created": false)
+pocketcontext-atlas rename-space Research "Reading notes"
+pocketcontext-atlas archive-space "Reading notes"
+pocketcontext-atlas restore-space "Reading notes"
+pocketcontext-atlas default-space                # show the default
+pocketcontext-atlas default-space Research       # make Research the default
+pocketcontext-atlas whoami                       # URL, sign-in and the selected space
 ```
 
 `--space SPACE` overrides `POCKETCONTEXT_SPACE`; without either, commands use the default space. `SPACE` is a space ID or the exact name of exactly one space. An unknown name is an error, and a name shared by several spaces is an error that lists their IDs; choose one by ID or rename one. `create-space NAME` is idempotent: it returns the one space already named `NAME` instead of creating another, and refuses when several spaces have that name.
