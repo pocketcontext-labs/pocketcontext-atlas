@@ -47,11 +47,52 @@ var Text = appserver.Text{
 	OAuthConsent: appserver.OAuthConsentText{
 		ConnectionsHTML: `<p>These apps can read and change knowledge in every space. Revoke access to disconnect an app.</p>`,
 		RequestHTML:     `<p><strong>{{.Name}}</strong> is asking to read and change your knowledge in every space, including originals, citations and published pages.</p><p>This does not grant server administration or shell access.</p>`,
+		// Atlas has no connected-apps view in the reader, so ConnectionsPath
+		// stays empty and /oauth/connections keeps Core's page in this style.
+		Page: appserver.OAuthPage{
+			CSS:        oauthPageCSS,
+			BrandHTML:  oauthBrandHTML,
+			SignInPath: "/#/signin",
+		},
 	},
 	BudgetExhausted: "Knowledge request budget exhausted. Retry after the indicated delay.",
 	OTPSubject:      "Log in to PocketContext Atlas",
 	OTPSenderName:   "PocketContext Atlas",
 }
+
+// The OAuth pages' Content-Security-Policy loads no images or fonts, so the
+// logo (ui/src/assets/brand/logo.svg) is inline and the wordmark falls back to
+// brand.css's Arial. Colours and type follow ui/src/theme.css and the reader's
+// login card. No text is under 16px, so iOS Safari never zooms.
+const oauthBrandHTML = `<div class="product-brand"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="34" height="34" aria-hidden="true"><path d="M15 10h226v149l-113 87L15 159z" fill="#e9ede2" stroke="#688258" stroke-width="8" stroke-linejoin="round"/><path d="m86 124 30 30 64-70" fill="none" stroke="#2e493e" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PocketContext Atlas</span></div>`
+
+const oauthPageCSS = `:root{color-scheme:light}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:#fafaf7}
+body{margin:0 auto;min-height:100dvh;max-width:408px;padding:35px 24px;display:flex;flex-direction:column;justify-content:center;background:radial-gradient(ellipse at 50% 20%,#35694f0d,transparent 65%);color:#46554b;font:16px/1.6 Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-wrap:anywhere}
+.product-brand{display:flex;align-items:center;gap:10px;margin-bottom:32px;color:#263b32;font:700 20px Arial,sans-serif;letter-spacing:-.6px}
+.product-brand svg{display:block;flex-shrink:0}
+h1{margin:0 0 20px;color:#25332c;font:400 34px/1.15 Georgia,serif;letter-spacing:-1px}
+p{margin:0 0 14px}
+p strong{color:#25332c;font-weight:600}
+small{display:block;margin:0 0 24px;color:#596b5e;font-size:16px}
+code{font:16px ui-monospace,SFMono-Regular,Consolas,monospace;color:#25332c}
+button,a{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button{cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+a{color:#35694f}
+#approve,#signin{display:block;width:100%;padding:13px 18px;border:0;border-radius:6px;background:#35694f;color:#f7faf7;font-weight:550;text-align:center;text-decoration:none}
+#deny{display:block;margin:6px auto 0;padding:10px 12px;border:0;background:none;color:#526657;text-decoration:underline}
+#message{margin:14px 0;color:#a13930;white-space:pre-wrap}
+#message:empty{display:none}
+#signin+p,#message+p{margin-top:24px}
+#message~p{text-align:center}
+#connections{margin:0 0 20px;padding:0;list-style:none;border-top:1px solid #dfe4dc}
+#connections li{padding:14px 0;border-bottom:1px solid #dfe4dc;color:#25332c}
+#reload{align-self:flex-start}
+#connections li button,#reload{margin-top:8px;padding:9px 14px;border:1px solid #35694f33;border-radius:6px;background:#f0f2ed;color:#25332c}
+button:focus-visible,a:focus-visible{outline:2px solid #35694f;outline-offset:4px}`
 
 // Policy returns the public routes, maintenance reads and observability lists.
 func Policy() appserver.Policy {

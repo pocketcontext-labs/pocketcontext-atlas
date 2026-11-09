@@ -6,10 +6,11 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { api } from "./api";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { api, pb } from "./api";
 import Login, { readEmailLoginLink } from "./Login";
 import App from "./App";
+import { browserNavigation, takeLoginReturn } from "./oauthReturn";
 
 beforeEach(() => {
   history.replaceState(null, "", "/");
@@ -21,6 +22,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  pb.authStore.clear();
+  localStorage.clear();
   history.replaceState(null, "", "/");
 });
 
@@ -138,4 +141,168 @@ it("accepts a replacement email link in an already-open tab without redeeming it
     "secondid1234567",
     "87654321",
   );
+});
+
+describe("OAuth sign-in route", () => {
+  const returnKey = "pocketcontext.atlas.login_return";
+  const target = "/oauth/authorize?client_id=abc&state=x";
+  const route = "/#/signin?next=" + encodeURIComponent(target);
+  const fakeToken = () =>
+    `e30.${btoa(JSON.stringify({ exp: 4102444800, type: "auth" }))}.sig`;
+  const signIn = () =>
+    pb.authStore.save(fakeToken(), {
+      id: "synthetic",
+      collectionName: "users",
+    } as never);
+  const stored = (hash: string) =>
+    localStorage.setItem(
+      returnKey,
+      JSON.stringify({ hash, expires: Date.now() + 60_000 }),
+    );
+  let replace: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    replace = vi
+      .spyOn(browserNavigation, "replace")
+      .mockImplementation(() => undefined);
+  });
+
+  it("is not mistaken for an email login link", () => {
+    history.replaceState(null, "", route);
+    expect(readEmailLoginLink()).toBeNull();
+    history.replaceState(
+      null,
+      "",
+      "/#/signin?next=" +
+        encodeURIComponent("/oauth/authorize?x=1") +
+        "&otpId=syntheticid1234&otp=12345678",
+    );
+    expect(readEmailLoginLink()).toBeNull();
+  });
+
+  it("shows the normal login and remembers the target for the emailed link", async () => {
+    history.replaceState(null, "", route);
+    render(<App />);
+    fireEvent.change(await screen.findByLabelText("Email"), {
+      target: { value: "owner@example.test" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send login link" }));
+    await screen.findByText(/If this email matches this knowledge base/);
+    expect(replace).not.toHaveBeenCalled();
+    expect(takeLoginReturn()).toBe(
+      "#/signin?next=" + encodeURIComponent(target),
+    );
+  });
+
+  it("forgets an earlier target when a link is requested elsewhere", async () => {
+    stored("#/signin?next=" + encodeURIComponent(target));
+    render(<Login />);
+    fireEvent.change(await screen.findByLabelText("Email"), {
+      target: { value: "owner@example.test" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send login link" }));
+    await screen.findByText(/If this email matches this knowledge base/);
+    expect(localStorage.getItem(returnKey)).toBeNull();
+  });
+
+  it("goes to the target after password sign-in", async () => {
+    vi.mocked(api.loginMode).mockResolvedValue("password");
+    vi.spyOn(api, "refreshSession").mockResolvedValue(undefined);
+    vi.mocked(api.loginPassword).mockImplementation(async () => signIn());
+    history.replaceState(null, "", route);
+    render(<App />);
+    fireEvent.change(await screen.findByLabelText("Password"), {
+      target: { value: "synthetic-password" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledExactlyOnceWith(target),
+    );
+  });
+
+  it("goes straight there when the server accepts the session", async () => {
+    const refresh = vi
+      .spyOn(api, "refreshSession")
+      .mockResolvedValue(undefined);
+    signIn();
+    history.replaceState(null, "", route);
+    render(<App />);
+    await screen.findByText("Returning to the connection request…");
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledExactlyOnceWith(target),
+    );
+    expect(refresh).toHaveBeenCalledWith(true);
+  });
+
+  it("shows login when the server rejects the session, without navigating", async () => {
+    vi.spyOn(api, "refreshSession").mockImplementation(async () => {
+      pb.authStore.clear();
+      throw Object.assign(new Error("rejected"), { status: 401 });
+    });
+    signIn();
+    history.replaceState(null, "", route);
+    render(<App />);
+    expect(await screen.findByLabelText("Email")).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("offers a retry when the check cannot complete", async () => {
+    const refresh = vi
+      .spyOn(api, "refreshSession")
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValue(undefined);
+    signIn();
+    history.replaceState(null, "", route);
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
+    expect(refresh).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["other path", "/api/secret?x=1"],
+    ["protocol relative", "//evil.example/oauth/authorize?x=1"],
+    ["backslash", "/\\evil.example/oauth/authorize?x=1"],
+    ["absolute", "https://evil.example/oauth/authorize?x=1"],
+  ])("falls back to the reader for %s", async (_name, next) => {
+    history.replaceState(
+      null,
+      "",
+      "/#/signin?next=" + encodeURIComponent(next),
+    );
+    render(<App />);
+    await waitFor(() => expect(location.hash).toBe("#/"));
+    await screen.findByLabelText("Email");
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("returns to the stored target after the emailed link", async () => {
+    stored("#/signin?next=" + encodeURIComponent(target));
+    vi.mocked(api.loginEmail).mockImplementation(async () => signIn());
+    history.replaceState(
+      null,
+      "",
+      "/#/login?otpId=syntheticid1234&otp=12345678",
+    );
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Log in" }));
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledExactlyOnceWith(target),
+    );
+    expect(localStorage.getItem(returnKey)).toBeNull();
+  });
+
+  it("refuses a tampered stored target after the emailed link", async () => {
+    stored("#/signin?next=" + encodeURIComponent("//evil.example/x"));
+    // Leave sign-in incomplete so the private reader does not mount.
+    history.replaceState(
+      null,
+      "",
+      "/#/login?otpId=syntheticid1234&otp=12345678",
+    );
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Log in" }));
+    await waitFor(() => expect(location.hash).toBe("#/"));
+    expect(replace).not.toHaveBeenCalled();
+    expect(localStorage.getItem(returnKey)).toBeNull();
+  });
 });

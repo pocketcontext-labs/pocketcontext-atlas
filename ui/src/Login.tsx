@@ -1,6 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Brand from "./Brand";
 import { api, localIdentity, type AuthMode } from "./api";
+import {
+  clearLoginReturn,
+  loginReturnHash,
+  rememberLoginReturn,
+} from "./oauthReturn";
 
 export type EmailLoginLink = { otpId: string; password: string };
 /** Only the fragment carries credentials; reading it never redeems a link. */
@@ -74,8 +79,14 @@ export default function Login({
   const email = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const hash = location.hash;
     void run(async () => {
       await api.requestEmailLogin(String(form.get("email")));
+      // The emailed link usually opens in a new tab: keep the consent request.
+      const target = loginReturnHash(hash);
+      if (target) rememberLoginReturn(target);
+      // Asking again from a spent link's #/login view keeps the original target.
+      else if (!hash.startsWith("#/login")) clearLoginReturn();
       setSent(true);
     });
   };

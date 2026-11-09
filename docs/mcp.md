@@ -9,8 +9,8 @@ and model; PocketContext does not run an agent or require a model-provider login
 
 For a PocketDeploy/ONCE container, follow [hosted setup](hosting.md) instead.
 Hosted mode enables public MCP and email login behind the proxy; its endpoint
-remains `https://YOUR_DOMAIN/mcp`. Sign in to the reader with the configured
-owner email, then return to the assistant's consent page in the same browser.
+remains `https://YOUR_DOMAIN/mcp`. When the consent page offers Log in, sign in
+with the configured owner email; the emailed link returns to the consent page.
 The native HTTPS instructions below remain unchanged for existing installations.
 
 Follow [HTTPS hosting](https.md) to initialize the project and configure a
@@ -44,9 +44,11 @@ that an assistant can actually read or write knowledge.
    client credentials empty. Availability depends on your Gemini account and
    region. Follow the current Gemini interface when labels change.
 3. Review PocketContext's authorization screen and approve the requested access.
-   If that screen cannot see your reader session, sign in in the same browser
-   profile, then return to the authorization screen and retry. A phone reader
-   session in another browser does not sign in your desktop browser.
+   If that screen shows Log in instead of Allow access, it cannot see a reader
+   session in this browser profile. Log in opens the reader's normal sign-in and
+   then returns to the same request. Alternatively, open a fresh `open --public`
+   link in another tab of this browser, then reload the authorization screen. A
+   phone reader session in another browser does not sign in your desktop browser.
 4. Ask Gemini to list spaces and search existing knowledge. Confirm the result
    also works in the mobile app. Do not report account linking or mobile access
    as verified until an actual request succeeds.
@@ -200,7 +202,8 @@ reboot recovery. Record manual Gemini confirmation separately from automated
 protocol and security checks.
 
 Open `https://knowledge.example.com/oauth/connections` in the signed-in reader
-browser to review and revoke connected apps. Revocation invalidates the grant
+browser to review and revoke connected apps (the reader has no separate
+connected-apps view). Revocation invalidates the grant
 and its access/refresh tokens. For public clients, refresh token replay also revokes that connection;
 reconnect rather than retrying an old refresh token.
 

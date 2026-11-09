@@ -1,4 +1,11 @@
 import Login, { readEmailLoginLink } from "./Login";
+import Brand from "./Brand";
+import {
+  browserNavigation,
+  isSigninHash,
+  oauthTargetFromHash,
+  takeLoginReturn,
+} from "./oauthReturn";
 import SpacesNavigation from "./SpacesNavigation";
 import SpaceManager from "./SpaceManager";
 import SourceSearch from "./SourceSearch";
@@ -125,12 +132,44 @@ function message(error: unknown) {
     ? error.message
     : "Unable to load PocketContext Atlas. Please try again.";
 }
+const currentSigninHash = () =>
+  isSigninHash(location.hash) ? location.hash : "";
+
+function SigninStatus({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <main className="login-shell">
+      <section className="login-card">
+        <Brand />
+        {onRetry ? (
+          <>
+            <p role="alert" className="login-error">
+              Unable to check your sign-in. Please try again.
+            </p>
+            <button className="primary-button" onClick={onRetry}>
+              Try again
+            </button>
+          </>
+        ) : (
+          <p role="status">Returning to the connection request…</p>
+        )}
+      </section>
+    </main>
+  );
+}
+
 export default function App() {
   const [emailLink, setEmailLink] = useState(readEmailLoginLink);
+  const [signinHash, setSigninHash] = useState(currentSigninHash);
+  const [authenticated, setAuthenticated] = useState(pb.authStore.isValid);
+  const [returning, setReturning] = useState(false);
+  const [checkFailed, setCheckFailed] = useState(false);
+  const [checkAttempt, setCheckAttempt] = useState(0);
+  const oauthTarget = signinHash ? oauthTargetFromHash(signinHash) : null;
   useEffect(() => {
     const receiveLink = () => {
       const next = readEmailLoginLink();
       if (next) setEmailLink(next);
+      setSigninHash(currentSigninHash());
     };
     window.addEventListener("hashchange", receiveLink);
     return () => window.removeEventListener("hashchange", receiveLink);
@@ -146,15 +185,53 @@ export default function App() {
   }, [emailLink]);
   const [session, setSession] = useState(sessionGeneration);
   useEffect(
-    () => pb.authStore.onChange(() => setSession(sessionGeneration)),
+    () =>
+      pb.authStore.onChange(() => {
+        setSession(sessionGeneration);
+        setAuthenticated(pb.authStore.isValid);
+      }),
     [],
   );
+  // An unusable return target is ignored, never followed. Nothing renders until
+  // it is gone, so the reader never reads "signin" as a page slug.
+  useEffect(() => {
+    if (!signinHash || oauthTarget) return;
+    history.replaceState(null, "", location.pathname + location.search + "#/");
+    setSigninHash("");
+  }, [signinHash, oauthTarget]);
+  // The local token only looks valid until the server agrees. Without this check
+  // a rejected token would bounce between consent and this route. Rejection
+  // clears the session, which renders the login form below.
+  useEffect(() => {
+    if (!oauthTarget || !authenticated || emailLink) return;
+    let active = true;
+    setCheckFailed(false);
+    api.refreshSession(true).then(
+      () => {
+        if (active) browserNavigation.replace(oauthTarget);
+      },
+      () => {
+        if (active) setCheckFailed(true);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [oauthTarget, authenticated, emailLink, checkAttempt]);
+  if (returning) return <SigninStatus />;
   if (emailLink)
     return (
       <Login
         key={emailLink.otpId}
         emailLink={emailLink}
         onEmailComplete={() => {
+          const target = takeLoginReturn();
+          const oauth = target && oauthTargetFromHash(target);
+          if (oauth) {
+            setReturning(true);
+            browserNavigation.replace(oauth);
+            return;
+          }
           history.replaceState(
             null,
             "",
@@ -163,6 +240,17 @@ export default function App() {
           setEmailLink(null);
         }}
       />
+    );
+  if (signinHash && !oauthTarget) return null;
+  if (oauthTarget)
+    return authenticated ? (
+      <SigninStatus
+        onRetry={
+          checkFailed ? () => setCheckAttempt((value) => value + 1) : undefined
+        }
+      />
+    ) : (
+      <Login />
     );
   // Remount every private view when the identity changes, including child caches.
   return <Reader key={session} />;

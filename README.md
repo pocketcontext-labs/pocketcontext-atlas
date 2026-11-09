@@ -267,7 +267,7 @@ The browser regression check uses synthetic data and a temporary UI copy. Instal
 | Path | Content |
 | --- | --- |
 | `cmd/pocketcontext-atlas` | entry point |
-| `internal/appconfig`, `internal/atlaspolicy` | runtime construction on `pocketcontext-core`, Atlas identity, public route allowlist and copy |
+| `internal/appconfig`, `internal/atlaspolicy` | runtime construction on `pocketcontext-core`, Atlas identity, public route allowlist, copy and OAuth page presentation |
 | `internal/client` | CLI commands, ingestion and extraction, search, lint, skill installation |
 | `internal/pocketcontext` | vendored server (SQL reads, search); see `VENDORED.md` |
 | `pb_hooks`, `pb_migrations` | schema and server-side rules |
