@@ -33,6 +33,12 @@ class Failure(Exception):
     pass
 
 
+def failure_reason(error):
+    """Name why an operation failed without leaking data: Failure messages are fixed
+    strings; anything else (storage client, OS or SQLite errors) is reported by type."""
+    return str(error) if isinstance(error, Failure) else type(error).__name__
+
+
 def atomic_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     tmp = path.with_name(path.name + ".tmp-" + uuid.uuid4().hex)
@@ -453,9 +459,9 @@ class Supervisor:
                             raise Failure("service is already prepared for upgrade")
                         job["result"] = self.backup(job["command"] == "prepare-upgrade")
                         next_backup = time.time() + DAY
-                    except Exception:
+                    except Exception as error:
                         job["result"] = {"ok": False, "error": "backup failed; inspect private operational state"}
-                        print("hosted backup failed", file=sys.stderr, flush=True)
+                        print(f"hosted backup failed: {failure_reason(error)}", file=sys.stderr, flush=True)
                     finally:
                         job["done"].set()
                 elif not self.paused and time.time() >= next_backup:
@@ -463,8 +469,8 @@ class Supervisor:
                         self.backup()
                         next_backup = time.time() + DAY
                         print("daily backup verified", flush=True)
-                    except Exception:
-                        print("daily backup failed; retry in one hour", file=sys.stderr, flush=True)
+                    except Exception as error:
+                        print(f"daily backup failed; retry in one hour: {failure_reason(error)}", file=sys.stderr, flush=True)
                         next_backup = time.time() + 3600
         finally:
             self.stopping.set()

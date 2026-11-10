@@ -130,6 +130,35 @@ class Backups(unittest.TestCase):
         with self.assertRaises(hosted.Failure):
             hosted.snapshot(self.config, self.config.revision)
 
+    def test_failure_reason_names_fixed_failures_and_only_types_otherwise(self):
+        self.assertEqual(hosted.failure_reason(hosted.Failure("source original is missing or corrupt")),
+                         "source original is missing or corrupt")
+        self.assertEqual(hosted.failure_reason(OSError("/storage/private/secret-path: denied")), "OSError")
+        self.assertEqual(hosted.failure_reason(RuntimeError("https://bucket.example/key?signature=x")), "RuntimeError")
+
+    def test_failed_backup_job_logs_its_reason(self):
+        hosted.atomic_json(self.config.state, {"revision": self.config.revision})
+        (self.config.project / "storage/sources/synthetic/note.txt").unlink()
+        supervisor = hosted.Supervisor(self.config, self.store)
+        child = Mock()
+        child.poll.return_value = None
+        child.wait.return_value = 0
+        job = {"command": "prepare-upgrade", "done": threading.Event()}
+        supervisor.commands.append(job)
+        starts = []
+        def start(*_):
+            starts.append(1)
+            supervisor.child = child
+            if len(starts) > 1:
+                supervisor.stopping.set()
+        stderr = io.StringIO()
+        with patch.object(supervisor, "start", side_effect=start), patch.object(supervisor, "control_loop"), \
+                patch.object(hosted.signal, "signal"), patch.object(hosted.sys, "stderr", stderr):
+            supervisor.run()
+        self.assertFalse(job["result"]["ok"])
+        self.assertFalse(supervisor.paused)
+        self.assertIn("hosted backup failed: source original is missing or corrupt", stderr.getvalue())
+
     def test_log_named_original_is_preserved(self):
         original = self.config.project / "storage/sources/synthetic/evidence.log"
         original.write_text("valid original")
