@@ -148,7 +148,10 @@ def included_files(config):
 
 def integrity(path):
     # This is a stopped database or an extracted archive, never the live writer.
-    with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as db:
+    # closing(): sqlite3's own context manager only commits, so a long-running
+    # supervisor would otherwise keep each read-only connection (and stale WAL
+    # state) open across server restarts.
+    with contextlib.closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as db:
         if db.execute("PRAGMA integrity_check").fetchone() != ("ok",):
             raise Failure("database integrity check failed")
 
@@ -162,7 +165,7 @@ def validate_databases(root):
         integrity(path)
         if path.name == "auxiliary.db":
             continue
-        with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as connection:
+        with contextlib.closing(sqlite3.connect(path.as_uri() + "?mode=ro", uri=True)) as connection:
             row = connection.execute("SELECT id FROM _collections WHERE name='sources'").fetchone()
             if not row:
                 raise Failure("backup database has no sources collection")

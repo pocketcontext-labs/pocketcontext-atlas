@@ -136,6 +136,23 @@ class Backups(unittest.TestCase):
         self.assertEqual(hosted.failure_reason(OSError("/storage/private/secret-path: denied")), "OSError")
         self.assertEqual(hosted.failure_reason(RuntimeError("https://bucket.example/key?signature=x")), "RuntimeError")
 
+    def test_validation_closes_every_connection_even_on_failure(self):
+        opened = []
+        real = sqlite3.connect
+        def tracking(*args, **kwargs):
+            connection = real(*args, **kwargs)
+            opened.append(connection)
+            return connection
+        with patch.object(hosted.sqlite3, "connect", side_effect=tracking):
+            hosted.validate_databases(self.config.root)
+            (self.config.project / "storage/sources/synthetic/note.txt").write_text("changed")
+            with self.assertRaisesRegex(hosted.Failure, "missing or corrupt"):
+                hosted.validate_databases(self.config.root)
+        self.assertTrue(opened)
+        for connection in opened:
+            with self.assertRaises(sqlite3.ProgrammingError):
+                connection.execute("SELECT 1")
+
     def test_failed_backup_job_logs_its_reason(self):
         hosted.atomic_json(self.config.state, {"revision": self.config.revision})
         (self.config.project / "storage/sources/synthetic/note.txt").unlink()
