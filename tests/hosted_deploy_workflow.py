@@ -84,6 +84,36 @@ class DeploymentWorkflow(unittest.TestCase):
             self.assertFalse((self.root / 'calls').exists())
             self.env[key] = original
 
+    def test_skipped_paths_never_include_embedded_files(self):
+        import re
+        # PyYAML reads the bare `on` key as True. GitHub applies the last matching pattern.
+        patterns = WORKFLOW[True]['push']['paths']
+        def regex(pattern):
+            out = ''
+            for part in re.split(r'(\*\*|\*)', pattern):
+                out += '.*' if part == '**' else '[^/]*' if part == '*' else re.escape(part)
+            return re.compile(out + r'\Z')
+        def deploys(path):
+            result = False
+            for pattern in patterns:
+                negated = pattern.startswith('!')
+                if regex(pattern.lstrip('!')).match(path):
+                    result = not negated
+            return result
+        tracked = subprocess.run(['git', 'ls-files'], cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+        embedded = []
+        for line in (ROOT / 'embed.go').read_text().splitlines():
+            if line.startswith('//go:embed '):
+                for entry in line.split()[1:]:
+                    embedded += [p for p in tracked if p == entry or p.startswith(entry.rstrip('/') + '/')]
+        self.assertIn('README.md', embedded)
+        self.assertIn('docs/hosting.md', embedded)
+        self.assertEqual([p for p in embedded if not deploys(p)], [])
+        for path in ('go.mod', 'docker/entrypoint.py', 'internal/client/commands.go', 'docs/releases/0.26.0.md'):
+            self.assertTrue(deploys(path), path)
+        for path in ('AGENTS.md', 'docs/development.md', 'docs/release-validation-0.18.0.md'):
+            self.assertFalse(deploys(path), path)
+
     def test_public_health_covers_every_target(self):
         self.executable('curl', "import os, pathlib, sys\nwith pathlib.Path(os.environ['CALL_LOG']).open('a') as f: f.write(sys.argv[-1] + '\\n')\n")
         urls = [f'https://{name}.example.test' for name in ('ada', 'alberto', 'vamsi')]

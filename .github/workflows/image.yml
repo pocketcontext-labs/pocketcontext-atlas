@@ -2,6 +2,22 @@ name: Hosted container image
 on:
   push:
     branches: [main]
+    # Every push to main deploys the hosted instances. Agent rules and docs outside
+    # the built-in manual do not change the image, so they skip the restart. Files
+    # embedded by embed.go stay included (checked by tests/hosted_deploy_workflow.py).
+    paths:
+      - '**'
+      - '!AGENTS.md'
+      - '!docs/**'
+      - 'docs/spaces.md'
+      - 'docs/import-obsidian.md'
+      - 'docs/upgrades.md'
+      - 'docs/reader-setup.md'
+      - 'docs/service.md'
+      - 'docs/https.md'
+      - 'docs/mcp.md'
+      - 'docs/hosting.md'
+      - 'docs/releases/**'
   pull_request:
   workflow_dispatch:
 permissions:
