@@ -47,6 +47,8 @@ var Text = appserver.Text{
 	OAuthConsent: appserver.OAuthConsentText{
 		ConnectionsHTML: `<p>These apps can read and change knowledge in every space. Revoke access to disconnect an app.</p>`,
 		RequestHTML:     `<p><strong>{{.Name}}</strong> is asking to read and change your knowledge in every space, including originals, citations and published pages.</p><p>This does not grant server administration or shell access.</p>`,
+		// Shown where the page has no sign-in action: Core's /oauth/connections page.
+		SignInHTML: `If you are not signed in, open your fresh {{.Product}} reader sign-in link in another tab of this browser, then return here. Your setup agent can issue one with <code>open --public</code>. You can also <a href="/" target="_blank" rel="noopener">open the reader</a> and use your password if you set one.`,
 		// Atlas has no connected-apps view in the reader, so ConnectionsPath
 		// stays empty and /oauth/connections keeps Core's page in this style.
 		Page: appserver.OAuthPage{
@@ -58,6 +60,7 @@ var Text = appserver.Text{
 	BudgetExhausted: "Knowledge request budget exhausted. Retry after the indicated delay.",
 	OTPSubject:      "Log in to PocketContext Atlas",
 	OTPSenderName:   "PocketContext Atlas",
+	OTPLoginPath:    "/#/login", // the reader route in sign-in emails already sent
 }
 
 // The OAuth pages' Content-Security-Policy loads no images or fonts, so the
@@ -103,8 +106,38 @@ func Policy() appserver.Policy {
 			ReadGets:  map[string]bool{"/api/context/schema": true},
 		},
 		Observe:           Observe,
+		OAuthScope:        OAuthScope,
+		PublicBodyLimit:   110 << 20,
+		Legacy:            Legacy,
+		Hosted:            HostedBudget,
 		HostedRequestCost: HostedRequestCost,
 	}
+}
+
+// OAuthScope is the one scope of the MCP endpoint. Connected clients store it,
+// so it must never change.
+const OAuthScope = "knowledge"
+
+// HostedBudget is one hosted account's request budget. Clients match the label
+// in 429 responses, so it must never change.
+var HostedBudget = appserver.HostedBudget{Label: "authenticated_knowledge", Burst: 1200, PerSecond: 100}
+
+// Legacy identifies databases of the releases before the single-user schema
+// (0.11.0), which this release refuses to open. Never remove an entry.
+var Legacy = appserver.LegacySchema{
+	Migrations: []string{
+		"1790300000_users.js",
+		"1790300100_knowledge.js",
+		"1790300200_google_jit.js",
+		"1790500000_search.js",
+		"1790700000_home.js",
+		"1791400000_properties.js",
+		"1791500000_spaces.js",
+		"1792700000_project_policy.js",
+		"1792700100_space_management.js",
+	},
+	Tables:      []string{"space_members", "user_directory", "project_policy"},
+	Description: "multi-account spaces",
 }
 
 // Observe lists the diagnostic labels; anything else is reported as unknown.
